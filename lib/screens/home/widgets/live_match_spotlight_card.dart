@@ -4,7 +4,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../models/match_info.dart';
 
 /// Warm gradient "hero" card for the currently live match, with a live
-/// scoreboard layout and a "Watch Live Now" call to action.
 class LiveMatchSpotlightCard extends StatelessWidget {
   const LiveMatchSpotlightCard({
     super.key,
@@ -35,7 +34,10 @@ class LiveMatchSpotlightCard extends StatelessWidget {
               children: [
                 Text(
                   match.sport,
-                  style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 12),
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -43,7 +45,7 @@ class LiveMatchSpotlightCard extends StatelessWidget {
             Text(
               match.title,
               style: GoogleFonts.quicksand(
-                color: Colors. amber,
+                color: Colors.amber,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
@@ -87,7 +89,7 @@ class LiveMatchSpotlightCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                 Text(
+                Text(
                   'vs',
                   style: GoogleFonts.quicksand(
                     color: Colors.white54,
@@ -121,7 +123,6 @@ class LiveMatchSpotlightCard extends StatelessWidget {
                     ),
                   ),
                 ),
-
               ],
             ),
           ],
