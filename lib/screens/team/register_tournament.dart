@@ -111,7 +111,8 @@ class _RegisterNewTeamState extends State<RegisterNewTeam> {
       if (_uploadedPhotoPath != null) "team_logo_path": _uploadedPhotoPath,
     };
 
-    final success = await provider.createTeam(params);
+    final response = await provider.createTeam(params);
+    final success = response != null;
 
     if (mounted) {
       if (success) {

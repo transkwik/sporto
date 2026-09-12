@@ -121,28 +121,7 @@ class LiveMatchSpotlightCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: onWatch,
-                  child: Container(
-                    padding:  EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 255, 128, 16),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child:  Text(
-                      'Watch Live Now',
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
+
               ],
             ),
           ],

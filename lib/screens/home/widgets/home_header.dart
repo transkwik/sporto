@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../auth/providers/auth_provider.dart';
 
 /// Top greeting row: time-of-day greeting + username on the left, wallet
 /// balance chip and notification bell on the right.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
-    required this.greeting,
-    required this.userName,
-    required this.walletBalance,
+    this.walletBalance = '₹ 0',
     required this.onAddFunds,
     required this.onNotificationsTap,
   });
 
-  final String greeting;
-  final String userName;
   final String walletBalance;
   final VoidCallback onAddFunds;
   final VoidCallback onNotificationsTap;
 
+  String _getGreeting() {
+    var hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final profile = authProvider.checkResponse?['profile'];
+    final userName = profile?['full_name'] ?? 'Guest';
+    final greeting = _getGreeting();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [

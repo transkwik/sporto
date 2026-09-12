@@ -116,7 +116,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               }
 
               final title = t['name'] ?? 'Unnamed Tournament';
-              final location = t['location'] ?? 'Unknown Location';
+              final location = t['location'] is Map ? (t['location']['name'] ?? 'Unknown Location') : (t['location']?.toString() ?? 'Unknown Location');
               final teamsCount = t['maximum_teams']?.toString() ?? 'Open';
               final entryFee = t['registration_fee'] != null
                   ? '₹${t['registration_fee']}'

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/playground_team_info.dart';
+import '../../home/providers/home_provider.dart';
 
 /// Card for a single entry in the "Teams Looking for Players" list: a
 /// sport-tinted gradient background, roster fill badge, and a "Join Team"
@@ -13,19 +14,44 @@ class PlaygroundTeamCard extends StatelessWidget {
     this.onTap,
   });
 
-  final PlaygroundTeamInfo team;
+  final Map<String, dynamic> team;
   final VoidCallback? onJoin;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final teamName = team['team_name'] ?? team['name'] ?? 'Unnamed Team';
+    final sportName = team['sport']?['name'] ?? 'Sport';
+    final captainName = team['captain']?['name'] ?? 'Unknown Captain';
+    final location = team['city'] ?? 'Unknown';
+    final maxPlayers = team['total_players'] ?? 11;
+    final playersCount = team['members']?['current_count'] ?? 0;
+    final neededCount = (maxPlayers - playersCount > 0)
+        ? (maxPlayers - playersCount)
+        : 0;
+    final isCricket = sportName.toString().toLowerCase() == 'cricket';
+
+    String initials = '?';
+    if (teamName.toString().isNotEmpty) {
+      initials = teamName.toString().substring(0, 1).toUpperCase();
+      if (teamName.toString().contains(' ')) {
+        final parts = teamName.toString().split(' ');
+        if (parts.length > 1 && parts[1].isNotEmpty) {
+          initials = '${parts[0].substring(0, 1)}${parts[1].substring(0, 1)}'
+              .toUpperCase();
+        }
+      }
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: team.cardGradient,
+          gradient: isCricket
+              ? AppColors.playgroundCricketCardGradient
+              : AppColors.playgroundFootballCardGradient,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.glassBorder),
         ),
@@ -40,11 +66,13 @@ class PlaygroundTeamCard extends StatelessWidget {
                   height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: team.avatarColor,
+                    color: isCricket
+                        ? const Color(0xFF1F4A3A)
+                        : const Color(0xFF8A4A22),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    team.avatarInitials,
+                    initials,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -61,7 +89,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              team.name,
+                              teamName,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
@@ -86,7 +114,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              '${team.playersCount}/${team.maxPlayers} Players',
+                              '$playersCount/$maxPlayers Players',
                               style: const TextStyle(
                                 color: AppColors.infoBlue,
                                 fontSize: 11,
@@ -101,7 +129,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                         TextSpan(
                           children: [
                             TextSpan(
-                              text: team.sport,
+                              text: sportName,
                               style: const TextStyle(
                                 color: AppColors.amberAccent,
                                 fontSize: 12.5,
@@ -116,7 +144,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                               ),
                             ),
                             TextSpan(
-                              text: team.captainName,
+                              text: captainName,
                               style: const TextStyle(
                                 color: AppColors.mintGreen,
                                 fontSize: 12.5,
@@ -138,7 +166,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
-                              team.location,
+                              location,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white54,
@@ -154,7 +182,7 @@ class PlaygroundTeamCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            team.distanceKm,
+                            'N/A',
                             style: const TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
@@ -172,7 +200,7 @@ class PlaygroundTeamCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Need ${team.neededCount} Player  •  ${team.neededPosition}',
+                    'Need $neededCount Player  •  Any',
                     style: const TextStyle(
                       color: AppColors.mintGreen,
                       fontSize: 12.5,
@@ -181,26 +209,49 @@ class PlaygroundTeamCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: onJoin,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.amberAccent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Join Team',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+                Consumer<HomeProvider>(
+                  builder: (context, homeProvider, child) {
+                    final bool apiHasRequested = team['join_request']?['request_sent'] == true;
+                    final hasRequested = apiHasRequested || homeProvider.hasRequestedToJoin(
+                      team['id'] ?? -1,
+                    );
+
+                    if (hasRequested) {
+                      return const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: Text(
+                          'Request Sent',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return GestureDetector(
+                      onTap: onJoin,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.amberAccent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Join Team',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ],
             ),

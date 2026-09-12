@@ -68,14 +68,17 @@ class PermissionProvider extends ChangeNotifier {
           List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
           if (placemarks.isNotEmpty) {
             Placemark place = placemarks.first;
+            String subLocality = place.subLocality ?? '';
             String locality = place.locality ?? '';
             String adminArea = place.administrativeArea ?? '';
-            if (locality.isNotEmpty && adminArea.isNotEmpty) {
-              address = "$locality, $adminArea";
-            } else if (locality.isNotEmpty) {
-              address = locality;
-            } else if (adminArea.isNotEmpty) {
-              address = adminArea;
+            
+            List<String> parts = [];
+            if (subLocality.isNotEmpty) parts.add(subLocality);
+            if (locality.isNotEmpty) parts.add(locality);
+            if (parts.isEmpty && adminArea.isNotEmpty) parts.add(adminArea);
+            
+            if (parts.isNotEmpty) {
+              address = parts.join(", ");
             }
           }
         } catch (e) {

@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/tournament_info.dart';
 
 /// Glass row card for a single entry in the "Browse Tournaments" list.
 class TournamentCard extends StatelessWidget {
   const TournamentCard({super.key, required this.tournament, this.onTap});
 
-  final TournamentInfo tournament;
+  final Map<String, dynamic> tournament;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final title = tournament['title'] ?? tournament['name'] ?? 'Unnamed Tournament';
+    final sportName = tournament['sport']?['name'] ?? 'Sport';
+    final location = tournament['location'] ?? 'Unknown Location';
+    final startString = tournament['start_date'];
+    final endString = tournament['end_date'];
+    
+    // Fallback UI stuff since the API doesn't provide all visual fields yet
+    String dateLabel = 'TBA';
+    if (startString != null && endString != null) {
+      dateLabel = 'Starts $startString - $endString';
+    }
+    final prize = '₹1,50,000 Prize Pool'; // Fallback
+    final statLabel = '6 / 16 Teams Registered'; // Fallback
+    final footerLabel = 'Entry Fee: ₹1,500\nLast Date: TBA'; // Fallback
+    
+    String initials = '?';
+    if (title.isNotEmpty) {
+      initials = title.substring(0, 1).toUpperCase();
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -26,24 +45,24 @@ class TournamentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${tournament.sport} • ${tournament.dateLabel}',
+              '$sportName • $dateLabel',
               style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                if (tournament.avatarLetter != null) ...[
+                if (initials != '?') ...[
                   Container(
                     width: 35,
                     height: 35,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      color: tournament.avatarColor ?? const Color.fromARGB(114, 255, 76, 48),
+                      color: const Color.fromARGB(114, 255, 76, 48),
                       // shape: BoxShape.circle,
                     ),
                     child: Text(
-                      tournament.avatarLetter!,
+                      initials,
                       style: GoogleFonts.quicksand(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -51,7 +70,7 @@ class TournamentCard extends StatelessWidget {
                 ],
                 Expanded(
                   child: Text(
-                    tournament.title,
+                    title,
                     style: GoogleFonts.quicksand(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -63,13 +82,7 @@ class TournamentCard extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on_outlined, color: Colors.white54, size: 13),
                 const SizedBox(width: 3),
-                Text(tournament.location, style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12)),
-                if (tournament.distanceKm != null) ...[
-                  const SizedBox(width: 10),
-                  const Icon(Icons.social_distance_rounded, color: Colors.white54, size: 13),
-                  const SizedBox(width: 3),
-                  Text(tournament.distanceKm!, style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12)),
-                ],
+                Text(location, style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12)),
               ],
             ),
             const SizedBox(height: 05),
@@ -81,16 +94,16 @@ class TournamentCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tournament.prize,
+                        prize,
                         style: GoogleFonts.quicksand(color: AppColors.amberAccent, fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 3),
-                      Text(tournament.statLabel, style: GoogleFonts.quicksand(color: Colors.white60, fontSize: 11.5)),
+                      Text(statLabel, style: GoogleFonts.quicksand(color: Colors.white60, fontSize: 11.5)),
                     ],
                   ),
                 ),
                 Text(
-                  tournament.footerLabel,
+                  footerLabel,
                   textAlign: TextAlign.right,
                   style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 11),
                 ),

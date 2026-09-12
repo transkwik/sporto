@@ -32,30 +32,6 @@ class TournamentInfo {
   final String? avatarLetter;
   final Color? avatarColor;
 
-  factory TournamentInfo.fromJson(Map<String, dynamic> json) {
-    String formattedDate = 'TBD';
-    if (json['tournament_start_at'] != null) {
-      try {
-        final date = DateTime.parse(json['tournament_start_at']);
-        formattedDate = DateFormat('dd MMM yyyy').format(date);
-      } catch (_) {}
-    }
-
-    String sportName = json['sport']?['name'] ?? 'Unknown';
-    
-    return TournamentInfo(
-      id: json['id'],
-      sport: sportName,
-      dateLabel: formattedDate,
-      title: json['name'] ?? 'Unnamed Tournament',
-      location: json['location'] ?? 'Unknown Location',
-      distanceKm: json['distance'] != null ? '${json['distance']} km' : null,
-      prize: json['prize_amount'] != null ? '₹${json['prize_amount']}' : '₹0',
-      statLabel: json['slots_left'] != null ? '${json['slots_left']} Slots Left' : 'Registration Open',
-      footerLabel: 'Starting soon',
-      avatarLetter: sportName.isNotEmpty ? sportName[0].toUpperCase() : 'T',
-    );
-  }
 }
 
 const List<TournamentInfo> dummyTournaments = [

@@ -53,12 +53,13 @@ class UserApis {
     log(response.toString());
     return response;
   }
+
   getTournaments(Map<String, dynamic> params) async {
     // Convert params to query string
     final queryParams = params.entries
         .map((e) => '${e.key}=${e.value}')
         .join('&');
-        
+
     var response = await ApiHelper().getTypeGet('tournaments?$queryParams');
     log(response.toString());
     return response;
@@ -96,25 +97,37 @@ class UserApis {
 
   // --- Payment & Registration APIs ---
   registerTournament(int tournamentId, Map<String, dynamic> params) async {
-    var response = await ApiHelper().getTypePostJson('tournaments/$tournamentId/register', params);
+    var response = await ApiHelper().getTypePostJson(
+      'tournaments/$tournamentId/register',
+      params,
+    );
     log(response.toString());
     return response;
   }
 
   initiatePayment(int registrationId, Map<String, dynamic> params) async {
-    var response = await ApiHelper().getTypePostJson('registrations/$registrationId/payment', params);
+    var response = await ApiHelper().getTypePostJson(
+      'registrations/$registrationId/payment',
+      params,
+    );
     log(response.toString());
     return response;
   }
 
   verifyPayment(int registrationId, Map<String, dynamic> params) async {
-    var response = await ApiHelper().getTypePostJson('registrations/$registrationId/payment/verify', params);
+    var response = await ApiHelper().getTypePostJson(
+      'registrations/$registrationId/payment/verify',
+      params,
+    );
     log(response.toString());
     return response;
   }
 
   addTeamPlayer(int teamId, Map<String, dynamic> params) async {
-    var response = await ApiHelper().getTypePostJson('teams/$teamId/players', params);
+    var response = await ApiHelper().getTypePostJson(
+      'teams/$teamId/players',
+      params,
+    );
     log(response.toString());
     return response;
   }
@@ -126,7 +139,54 @@ class UserApis {
   }
 
   removeTeamPlayer(int teamId, int playerId) async {
-    var response = await ApiHelper().getTypeDelete('teams/$teamId/players/$playerId');
+    var response = await ApiHelper().getTypeDelete(
+      'teams/$teamId/players/$playerId',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getAvailableTeams(Map<String, dynamic> params) async {
+    var response = await ApiHelper().getTypePostJson('teams/available', params);
+    log(response.toString());
+    return response;
+  }
+
+  joinTeamRequest(int teamId) async {
+    var response = await ApiHelper().getTypePostJson(
+      'teams/$teamId/join-request',
+      {},
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getMyTeams(int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet('my-teams?page=$page&per_page=$perPage');
+    log(response.toString());
+    return response;
+  }
+
+  getMyTeamDetails(int id) async {
+    var response = await ApiHelper().getTypeGet('my-teams/$id');
+    log(response.toString());
+    return response;
+  }
+
+  getLiveMatches(dynamic sportId, int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet('matches/live?sport_id=$sportId&page=$page&per_page=$perPage');
+    log(response.toString());
+    return response;
+  }
+
+  getUpcomingMatches(dynamic sportId, int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet('matches/upcoming?sport_id=$sportId&page=$page&per_page=$perPage');
+    log(response.toString());
+    return response;
+  }
+
+  getAllMatches(dynamic sportId, int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet('matches?sport_id=$sportId&page=$page&per_page=$perPage');
     log(response.toString());
     return response;
   }

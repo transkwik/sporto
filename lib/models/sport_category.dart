@@ -16,31 +16,6 @@ class SportCategory {
   final int? id;
   final String? iconUrl;
 
-  factory SportCategory.fromJson(Map<String, dynamic> json) {
-    return SportCategory(
-      id: json['id'],
-      label: json['name'] ?? 'Unknown',
-      iconUrl: json['icon_url'],
-      icon: _getIconForSport(json['name'] ?? ''),
-    );
-  }
-
-  static IconData _getIconForSport(String name) {
-    switch (name.toLowerCase()) {
-      case 'cricket': return Icons.sports_cricket_rounded;
-      case 'football': return Icons.sports_soccer_rounded;
-      case 'basketball': return Icons.sports_basketball_rounded;
-      case 'volleyball': return Icons.sports_volleyball_rounded;
-      case 'badminton': return Icons.sports_tennis_rounded;
-      case 'tennis': return Icons.sports_tennis_rounded;
-      case 'kabaddi': return Icons.sports_martial_arts_rounded;
-      case 'hockey': return Icons.sports_hockey_rounded;
-      case 'baseball': return Icons.sports_baseball_rounded;
-      case 'golf': return Icons.sports_golf_rounded;
-      case 'esports': return Icons.sports_esports_rounded;
-      default: return Icons.sports_rounded;
-    }
-  }
 }
 
 const List<SportCategory> dummySportCategories = [

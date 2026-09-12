@@ -12,6 +12,9 @@ class HomeProvider extends ChangeNotifier {
   List<dynamic> _sportsList = [];
   List<dynamic> get sportsList => _sportsList;
 
+  bool _isFetchingSports = false;
+  bool get isFetchingSports => _isFetchingSports;
+
   List<dynamic> _tournamentsList = [];
   List<dynamic> get tournamentsList => _tournamentsList;
 
@@ -36,7 +39,11 @@ class HomeProvider extends ChangeNotifier {
   }
 
   Future<void> fetchSports() async {
+    if (_sportsList.isNotEmpty) return; // Cache it
+
     _setLoading(true);
+    _isFetchingSports = true;
+    notifyListeners();
     clearMessages();
 
     try {
@@ -52,6 +59,8 @@ class HomeProvider extends ChangeNotifier {
     } catch (e) {
       _errorMessage = 'An unexpected error occurred: $e';
     } finally {
+      _isFetchingSports = false;
+      notifyListeners();
       _setLoading(false);
     }
   }
@@ -206,7 +215,7 @@ class HomeProvider extends ChangeNotifier {
   bool _isCreatingTeam = false;
   bool get isCreatingTeam => _isCreatingTeam;
 
-  Future<bool> createTeam(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>?> createTeam(Map<String, dynamic> params) async {
     _isCreatingTeam = true;
     notifyListeners();
     clearMessages();
@@ -217,14 +226,14 @@ class HomeProvider extends ChangeNotifier {
       if (response != null && response['success'] == true) {
         // Automatically fetch the latest teams after creation
         await fetchTeams();
-        return true;
+        return response;
       } else {
         _errorMessage = response?['message'] ?? 'Failed to create team.';
-        return false;
+        return null;
       }
     } catch (e) {
       _errorMessage = 'An error occurred: $e';
-      return false;
+      return null;
     } finally {
       _isCreatingTeam = false;
       notifyListeners();
@@ -280,6 +289,401 @@ class HomeProvider extends ChangeNotifier {
     } finally {
       _isDeletingTeam = false;
       notifyListeners();
+    }
+  }
+
+  // --- Available Teams (Playground) ---
+  bool _isFetchingAvailableTeams = false;
+  bool get isFetchingAvailableTeams => _isFetchingAvailableTeams;
+
+  List<Map<String, dynamic>> _availableTeamsList = [];
+  List<Map<String, dynamic>> get availableTeamsList => _availableTeamsList;
+
+  void _setFetchingAvailableTeams(bool value) {
+    _isFetchingAvailableTeams = value;
+    notifyListeners();
+  }
+
+  int _currentAvailableTeamsPage = 1;
+  int _lastAvailableTeamsPage = 1;
+  bool _isFetchingMoreAvailableTeams = false;
+  bool get isFetchingMoreAvailableTeams => _isFetchingMoreAvailableTeams;
+
+  void _setFetchingMoreAvailableTeams(bool value) {
+    _isFetchingMoreAvailableTeams = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchAvailableTeams({
+    bool isRefresh = false,
+    int? sportId,
+    double? latitude,
+    double? longitude,
+  }) async {
+    if (isRefresh) {
+      _currentAvailableTeamsPage = 1;
+      _setFetchingAvailableTeams(true);
+      _availableTeamsList = [];
+    } else {
+      if (_currentAvailableTeamsPage > _lastAvailableTeamsPage ||
+          _isFetchingMoreAvailableTeams) {
+        return;
+      }
+      _setFetchingMoreAvailableTeams(true);
+    }
+    clearMessages();
+
+    try {
+      final params = <String, dynamic>{
+        'page': _currentAvailableTeamsPage,
+        'per_page': 20,
+      };
+
+      if (sportId != null) params['sport_id'] = sportId;
+      if (latitude != null) params['latitude'] = '';
+      // latitude;
+      if (longitude != null) params['longitude'] = '';
+      // longitude;
+      params['radius_km'] = '';
+
+      final response = await UserApis().getAvailableTeams(params);
+
+      if (response != null && response['error'] != null) {
+        _errorMessage = response['error'];
+      } else if (response != null && response['success'] == true) {
+        final data = response['data'];
+        if (data != null) {
+          // Check if data is paginated or list
+          List<dynamic> newData = [];
+          if (data is List) {
+            newData = data;
+          } else if (data is Map && data.containsKey('data')) {
+            newData = data['data'] ?? [];
+            _lastAvailableTeamsPage = data['last_page'] ?? 1;
+          }
+
+          final mappedData = newData
+              .map((e) => e as Map<String, dynamic>)
+              .toList();
+
+          if (isRefresh) {
+            _availableTeamsList = mappedData;
+          } else {
+            _availableTeamsList.addAll(mappedData);
+          }
+          _currentAvailableTeamsPage++;
+        }
+      } else {
+        _errorMessage =
+            response?['message'] ?? 'Failed to fetch available teams.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+    } finally {
+      if (isRefresh) {
+        _setFetchingAvailableTeams(false);
+      } else {
+        _setFetchingMoreAvailableTeams(false);
+      }
+    }
+  }
+
+  // Track which teams the user has requested to join in this session
+  final Set<int> _requestedTeamIds = {};
+
+  bool hasRequestedToJoin(int teamId) {
+    return _requestedTeamIds.contains(teamId);
+  }
+
+  Future<Map<String, dynamic>?> joinTeamRequest(int teamId) async {
+    clearMessages();
+    try {
+      final response = await UserApis().joinTeamRequest(teamId);
+
+      if (response != null && response['success'] == true) {
+        _requestedTeamIds.add(teamId);
+        notifyListeners();
+      }
+
+      return response;
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+      return null;
+    }
+  }
+
+  // --- My Teams ---
+  bool _isFetchingMyTeams = false;
+  bool get isFetchingMyTeams => _isFetchingMyTeams;
+
+  List<Map<String, dynamic>> _myTeamsList = [];
+  List<Map<String, dynamic>> get myTeamsList => _myTeamsList;
+
+  int _currentMyTeamsPage = 1;
+  int _lastMyTeamsPage = 1;
+  bool _isFetchingMoreMyTeams = false;
+  bool get isFetchingMoreMyTeams => _isFetchingMoreMyTeams;
+
+  void _setFetchingMyTeams(bool value) {
+    _isFetchingMyTeams = value;
+    notifyListeners();
+  }
+
+  void _setFetchingMoreMyTeams(bool value) {
+    _isFetchingMoreMyTeams = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchMyTeams({bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentMyTeamsPage = 1;
+      _setFetchingMyTeams(true);
+      _myTeamsList = [];
+    } else {
+      if (_currentMyTeamsPage > _lastMyTeamsPage || _isFetchingMoreMyTeams) {
+        return;
+      }
+      _setFetchingMoreMyTeams(true);
+    }
+    clearMessages();
+
+    try {
+      final response = await UserApis().getMyTeams(_currentMyTeamsPage, 20);
+
+      if (response != null && response['error'] != null) {
+        _errorMessage = response['error'];
+      } else if (response != null && response['success'] == true) {
+        final data = response['data'] as List<dynamic>?;
+        if (data != null) {
+          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          
+          if (isRefresh) {
+            _myTeamsList = mappedData;
+          } else {
+            _myTeamsList.addAll(mappedData);
+          }
+          _currentMyTeamsPage++;
+          
+          final meta = response['meta'];
+          if (meta != null) {
+            _lastMyTeamsPage = meta['last_page'] ?? 1;
+          }
+        }
+      } else {
+        _errorMessage = response?['message'] ?? 'Failed to fetch my teams.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+    } finally {
+      if (isRefresh) {
+        _setFetchingMyTeams(false);
+      } else {
+        _setFetchingMoreMyTeams(false);
+      }
+    }
+  }
+
+  // --- Live Matches ---
+  bool _isFetchingLiveMatches = false;
+  bool get isFetchingLiveMatches => _isFetchingLiveMatches;
+
+  List<Map<String, dynamic>> _liveMatchesList = [];
+  List<Map<String, dynamic>> get liveMatchesList => _liveMatchesList;
+
+  int _currentLiveMatchesPage = 1;
+  int _lastLiveMatchesPage = 1;
+  bool _isFetchingMoreLiveMatches = false;
+  bool get isFetchingMoreLiveMatches => _isFetchingMoreLiveMatches;
+
+  void _setFetchingLiveMatches(bool value) {
+    _isFetchingLiveMatches = value;
+    notifyListeners();
+  }
+
+  void _setFetchingMoreLiveMatches(bool value) {
+    _isFetchingMoreLiveMatches = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchLiveMatches(dynamic sportId, {bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentLiveMatchesPage = 1;
+      _setFetchingLiveMatches(true);
+      _liveMatchesList = [];
+    } else {
+      if (_currentLiveMatchesPage > _lastLiveMatchesPage || _isFetchingMoreLiveMatches) {
+        return;
+      }
+      _setFetchingMoreLiveMatches(true);
+    }
+    clearMessages();
+
+    try {
+      final response = await UserApis().getLiveMatches(sportId, _currentLiveMatchesPage, 20);
+
+      if (response != null && response['error'] != null) {
+        _errorMessage = response['error'];
+      } else if (response != null && response['success'] == true) {
+        final data = response['data']?['items'] as List<dynamic>?;
+        if (data != null) {
+          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          
+          if (isRefresh) {
+            _liveMatchesList = mappedData;
+          } else {
+            _liveMatchesList.addAll(mappedData);
+          }
+          _currentLiveMatchesPage++;
+          
+          _lastLiveMatchesPage = response['data']?['last_page'] ?? 1;
+        }
+      } else {
+        _errorMessage = response?['message'] ?? 'Failed to fetch live matches.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+    } finally {
+      if (isRefresh) {
+        _setFetchingLiveMatches(false);
+      } else {
+        _setFetchingMoreLiveMatches(false);
+      }
+    }
+  }
+
+  // --- Upcoming Matches ---
+  bool _isFetchingUpcomingMatches = false;
+  bool get isFetchingUpcomingMatches => _isFetchingUpcomingMatches;
+
+  List<Map<String, dynamic>> _upcomingMatchesList = [];
+  List<Map<String, dynamic>> get upcomingMatchesList => _upcomingMatchesList;
+
+  int _currentUpcomingMatchesPage = 1;
+  int _lastUpcomingMatchesPage = 1;
+  bool _isFetchingMoreUpcomingMatches = false;
+  bool get isFetchingMoreUpcomingMatches => _isFetchingMoreUpcomingMatches;
+
+  void _setFetchingUpcomingMatches(bool value) {
+    _isFetchingUpcomingMatches = value;
+    notifyListeners();
+  }
+
+  void _setFetchingMoreUpcomingMatches(bool value) {
+    _isFetchingMoreUpcomingMatches = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchUpcomingMatches(dynamic sportId, {bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentUpcomingMatchesPage = 1;
+      _setFetchingUpcomingMatches(true);
+      _upcomingMatchesList = [];
+    } else {
+      if (_currentUpcomingMatchesPage > _lastUpcomingMatchesPage || _isFetchingMoreUpcomingMatches) {
+        return;
+      }
+      _setFetchingMoreUpcomingMatches(true);
+    }
+    clearMessages();
+
+    try {
+      final response = await UserApis().getUpcomingMatches(sportId, _currentUpcomingMatchesPage, 20);
+
+      if (response != null && response['error'] != null) {
+        _errorMessage = response['error'];
+      } else if (response != null && response['success'] == true) {
+        final data = response['data']?['items'] as List<dynamic>?;
+        if (data != null) {
+          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          
+          if (isRefresh) {
+            _upcomingMatchesList = mappedData;
+          } else {
+            _upcomingMatchesList.addAll(mappedData);
+          }
+          _currentUpcomingMatchesPage++;
+          
+          _lastUpcomingMatchesPage = response['data']?['last_page'] ?? 1;
+        }
+      } else {
+        _errorMessage = response?['message'] ?? 'Failed to fetch upcoming matches.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+    } finally {
+      if (isRefresh) {
+        _setFetchingUpcomingMatches(false);
+      } else {
+        _setFetchingMoreUpcomingMatches(false);
+      }
+    }
+  }
+
+  // --- All Matches ---
+  bool _isFetchingAllMatches = false;
+  bool get isFetchingAllMatches => _isFetchingAllMatches;
+
+  List<Map<String, dynamic>> _allMatchesList = [];
+  List<Map<String, dynamic>> get allMatchesList => _allMatchesList;
+
+  int _currentAllMatchesPage = 1;
+  int _lastAllMatchesPage = 1;
+  bool _isFetchingMoreAllMatches = false;
+  bool get isFetchingMoreAllMatches => _isFetchingMoreAllMatches;
+
+  void _setFetchingAllMatches(bool value) {
+    _isFetchingAllMatches = value;
+    notifyListeners();
+  }
+
+  void _setFetchingMoreAllMatches(bool value) {
+    _isFetchingMoreAllMatches = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchAllMatches(dynamic sportId, {bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentAllMatchesPage = 1;
+      _setFetchingAllMatches(true);
+      _allMatchesList = [];
+    } else {
+      if (_currentAllMatchesPage > _lastAllMatchesPage || _isFetchingMoreAllMatches) {
+        return;
+      }
+      _setFetchingMoreAllMatches(true);
+    }
+    clearMessages();
+
+    try {
+      final response = await UserApis().getAllMatches(sportId, _currentAllMatchesPage, 20);
+
+      if (response != null && response['error'] != null) {
+        _errorMessage = response['error'];
+      } else if (response != null && response['success'] == true) {
+        final data = response['data']?['items'] as List<dynamic>?;
+        if (data != null) {
+          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          
+          if (isRefresh) {
+            _allMatchesList = mappedData;
+          } else {
+            _allMatchesList.addAll(mappedData);
+          }
+          _currentAllMatchesPage++;
+          
+          _lastAllMatchesPage = response['data']?['last_page'] ?? 1;
+        }
+      } else {
+        _errorMessage = response?['message'] ?? 'Failed to fetch matches.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+    } finally {
+      if (isRefresh) {
+        _setFetchingAllMatches(false);
+      } else {
+        _setFetchingMoreAllMatches(false);
+      }
     }
   }
 }

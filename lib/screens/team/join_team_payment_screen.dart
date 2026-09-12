@@ -13,7 +13,7 @@ import 'join_request_sent_screen.dart';
 class JoinTeamPaymentScreen extends StatefulWidget {
   const JoinTeamPaymentScreen({super.key, required this.team});
 
-  final PlaygroundTeamInfo team;
+  final Map<String, dynamic> team;
 
   @override
   State<JoinTeamPaymentScreen> createState() => _JoinTeamPaymentScreenState();
@@ -25,8 +25,12 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
 
   void _handlePay() {
     FocusScope.of(context).unfocus();
+    final teamName =
+        widget.team['team_name'] ?? widget.team['name'] ?? 'Unnamed Team';
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => JoinRequestSentScreen(teamName: widget.team.name)),
+      MaterialPageRoute(
+        builder: (_) => JoinRequestSentScreen(teamName: teamName),
+      ),
     );
   }
 
@@ -35,7 +39,9 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -47,7 +53,11 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
                     const SizedBox(width: 14),
                     const Text(
                       'Payment Method',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -56,14 +66,23 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                   children: [
-                    PayableAmountCard(amount: widget.team.playerShareFee),
+                    PayableAmountCard(
+                      amount: '₹0',
+                    ), // API doesn't provide fee yet
                     const SizedBox(height: 22),
                     const Text(
                       'Select Your Payment Method',
-                      style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 14),
-                    PaymentMethodTabs(selectedIndex: _tabIndex, onSelect: (i) => setState(() => _tabIndex = i)),
+                    PaymentMethodTabs(
+                      selectedIndex: _tabIndex,
+                      onSelect: (i) => setState(() => _tabIndex = i),
+                    ),
                     const SizedBox(height: 18),
                     PaymentOptionTile(
                       label: 'G Pay',
@@ -71,9 +90,17 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
                       onTap: () => setState(() => _selectedOption = 0),
                     ),
                     const SizedBox(height: 12),
-                    PaymentOptionTile(label: 'Add UPI', trailing: PaymentOptionTrailing.add, onTap: () {}),
+                    PaymentOptionTile(
+                      label: 'Add UPI',
+                      trailing: PaymentOptionTrailing.add,
+                      onTap: () {},
+                    ),
                     const SizedBox(height: 12),
-                    PaymentOptionTile(label: 'Add New Wallet', trailing: PaymentOptionTrailing.add, onTap: () {}),
+                    PaymentOptionTile(
+                      label: 'Add New Wallet',
+                      trailing: PaymentOptionTrailing.add,
+                      onTap: () {},
+                    ),
                   ],
                 ),
               ),
@@ -96,9 +123,13 @@ class _JoinTeamPaymentScreenState extends State<JoinTeamPaymentScreen> {
                         ),
                       ],
                     ),
-                    child: Text(
-                      'Pay ${widget.team.playerShareFee}',
-                      style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700),
+                    child: const Text(
+                      'Pay ₹0', // API doesn't provide fee yet
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),

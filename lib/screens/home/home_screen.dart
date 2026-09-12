@@ -135,6 +135,8 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
       double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
       double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
       homeProvider.fetchTournaments(isRefresh: true, lat: lat, lng: lng);
+      homeProvider.fetchLiveMatches('', isRefresh: true);
+      homeProvider.fetchUpcomingMatches('', isRefresh: true);
     });
   }
 
@@ -146,6 +148,10 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
         double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
         homeProvider.fetchTournaments(lat: lat, lng: lng);
+      }
+      if (!homeProvider.isFetchingLiveMatches && !homeProvider.isFetchingMoreLiveMatches && homeProvider.sportsList.isNotEmpty) {
+        final sportId = _selectedCategory == 0 ? '' : homeProvider.sportsList[_selectedCategory - 1]['id'];
+        homeProvider.fetchLiveMatches(sportId, isRefresh: false);
       }
     }
   }
@@ -179,8 +185,6 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
         HomeHeader(
-          greeting: _getGreeting(),
-          userName: userName,
           walletBalance: '₹ 500',
           onAddFunds: () {},
           onNotificationsTap: () {},
@@ -192,18 +196,76 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         const SizedBox(height: 18),
         const HomeSearchBar(),
         const SizedBox(height: 20),
-        const SectionHeader(dotColor: AppColors.primary, title: 'Live Now'),
-        const SizedBox(height: 14),
-        LiveMatchSpotlightCard(
-          match: dummyLiveMatch,
-          onWatch: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
-          ),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
-          ),
+        Consumer<HomeProvider>(
+          builder: (context, homeProvider, child) {
+            final liveMatches = homeProvider.liveMatchesList;
+            final isLoadingLive = homeProvider.isFetchingLiveMatches;
+            
+            if (isLoadingLive) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionHeader(dotColor: AppColors.primary, title: 'Live Now'),
+                  const SizedBox(height: 14),
+                  const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+                  const SizedBox(height: 26),
+                ],
+              );
+            }
+            
+            if (liveMatches.isEmpty) {
+              return const SizedBox.shrink(); // Pass empty container
+            }
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionHeader(dotColor: AppColors.primary, title: 'Live Now'),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 185,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: liveMatches.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: (context, index) {
+                      final matchData = liveMatches[index];
+                      final teamA = matchData['participants']?['team_a']?['name'] ?? 'Team A';
+                      final teamB = matchData['participants']?['team_b']?['name'] ?? 'Team B';
+                      final sportName = matchData['tournament']?['sport']?['name'] ?? 'Unknown Sport';
+                      final title = matchData['tournament']?['name'] ?? 'Tournament';
+                      final status = matchData['status'] ?? 'Scheduled';
+
+                      final matchInfo = MatchInfo(
+                        sport: sportName,
+                        title: title,
+                        teamA: teamA,
+                        teamB: teamB,
+                        scoreA: '0/0',
+                        scoreB: '0/0',
+                        status: status,
+                      );
+
+                      return SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.85,
+                        child: LiveMatchSpotlightCard(
+                          match: matchInfo,
+                          onWatch: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
+                          ),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 26),
+              ],
+            );
+          },
         ),
-        const SizedBox(height: 26),
         SizedBox(
           height: 84,
           child: Consumer<HomeProvider>(
@@ -215,15 +277,15 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
               }
               
               final sports = homeProvider.sportsList.isEmpty
-                  ? [const SportCategory(label: 'All', icon: Icons.apps_rounded, id: null), ...dummySportCategories]
-                  : [const SportCategory(label: 'All', icon: Icons.apps_rounded, id: null), ...homeProvider.sportsList.map((s) => SportCategory.fromJson(s as Map<String, dynamic>))];
+                  ? [{'label': 'All', 'icon': Icons.apps_rounded, 'id': null}, ...dummySportCategories.map((c) => {'label': c.label, 'icon': c.icon, 'id': c.id})]
+                  : [{'label': 'All', 'icon': Icons.apps_rounded, 'id': null}, ...homeProvider.sportsList];
 
               return ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: sports.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 18),
                 itemBuilder: (context, index) {
-                  final category = sports[index];
+                  final category = sports[index] as Map<String, dynamic>;
                   return SportIconButton(
                     category: category,
                     selected: _selectedCategory == index,
@@ -237,7 +299,15 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                         isRefresh: true,
                         lat: lat,
                         lng: lng,
-                        sportId: category.id != null ? category.id.toString() : '',
+                        sportId: category['id'] != null ? category['id'].toString() : '',
+                      );
+                      homeProvider.fetchLiveMatches(
+                        category['id'] != null ? category['id'].toString() : '',
+                        isRefresh: true,
+                      );
+                      homeProvider.fetchUpcomingMatches(
+                        category['id'] != null ? category['id'].toString() : '',
+                        isRefresh: true,
                       );
                     },
                   );
@@ -257,22 +327,81 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
           ],
         ),
         const SizedBox(height: 25),
-          Text(
-          'Next Match',
-          style:  GoogleFonts.quicksand(color: AppColors.amberAccent, fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        NextMatchCard(
-          match: dummyNextMatch,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const TournamentDetailScreen(tournamentId: 7),
-              ),
+        Consumer<HomeProvider>(
+          builder: (context, homeProvider, child) {
+            final upcomingMatches = homeProvider.upcomingMatchesList;
+            final isLoadingUpcoming = homeProvider.isFetchingUpcomingMatches;
+            
+            if (isLoadingUpcoming) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Upcoming Matches',
+                    style: GoogleFonts.quicksand(color: AppColors.amberAccent, fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 14),
+                  const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  const SizedBox(height: 25),
+                ],
+              );
+            }
+            
+            if (upcomingMatches.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Upcoming Matches',
+                  style: GoogleFonts.quicksand(color: AppColors.amberAccent, fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 185,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: upcomingMatches.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: (context, index) {
+                      final matchData = upcomingMatches[index];
+                      final teamA = matchData['participants']?['team_a']?['name'] ?? 'Team A';
+                      final teamB = matchData['participants']?['team_b']?['name'] ?? 'Team B';
+                      final sportName = matchData['tournament']?['sport']?['name'] ?? 'Unknown Sport';
+                      final title = matchData['tournament']?['name'] ?? 'Tournament';
+                      final status = matchData['status'] ?? 'Scheduled';
+
+                      // Since NextMatchCard needs a lot of detailed info not present in the basic 
+                      // upcoming match API (like maxPlayers, regFee), we'll use LiveMatchSpotlightCard 
+                      // which handles basic MatchInfo gracefully, as we did in MatchesScreen.
+                      final matchInfo = MatchInfo(
+                        sport: sportName,
+                        title: title,
+                        teamA: teamA,
+                        teamB: teamB,
+                        scoreA: '0/0',
+                        scoreB: '0/0',
+                        status: status,
+                      );
+
+                      return SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.85,
+                        child: LiveMatchSpotlightCard(
+                          match: matchInfo,
+                          onWatch: () {}, // Detail screen navigation can be added here
+                          onTap: () {},
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 25),
+              ],
             );
           },
         ),
-        const SizedBox(height: 25),
          Text(
           'Browse Tournaments',
           style: GoogleFonts.quicksand(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
@@ -308,15 +437,15 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                       child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
                     );
                   }
-                  final t = list[index];
-                  final tournamentModel = TournamentInfo.fromJson(t as Map<String, dynamic>);
+                  final t = list[index] as Map<String, dynamic>;
                   return TournamentCard(
-                    tournament: tournamentModel,
+                    tournament: t,
                     onTap: () {
-                      if (tournamentModel.id != null) {
+                      final id = t['id'];
+                      if (id != null) {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => TournamentDetailScreen(tournamentId: tournamentModel.id!),
+                            builder: (_) => TournamentDetailScreen(tournamentId: id),
                           ),
                         );
                       }
