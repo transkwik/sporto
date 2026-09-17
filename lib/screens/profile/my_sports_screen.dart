@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/my_sport_info.dart';
+import 'widgets/add_sport_sheet.dart';
 import 'widgets/add_sport_tile.dart';
 import 'widgets/selected_sport_card.dart';
 
@@ -39,16 +40,33 @@ class _MySportsScreenState extends State<MySportsScreen> {
     });
   }
 
-  void _save() {
-    final count = _selected.length;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          count == 0 ? 'Select at least one sport to save.' : 'Saved $count sport${count == 1 ? '' : 's'}.',
+  Future<void> _addSport() async {
+    if (_available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All sports are already added.'),
+          backgroundColor: AppColors.error,
         ),
-        backgroundColor: count == 0 ? AppColors.error : AppColors.success,
-      ),
+      );
+      return;
+    }
+
+    final result = await showModalBottomSheet<AddSportResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (_) => AddSportSheet(availableSports: _available),
     );
+
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _sports = _sports.map((item) {
+        if (item.id != result.sport.id) return item;
+        return item.copyWith(selected: true, roleLabel: result.roleLabel);
+      }).toList();
+    });
   }
 
   @override
@@ -77,7 +95,7 @@ class _MySportsScreenState extends State<MySportsScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: _save,
+                      onTap: _addSport,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
@@ -85,7 +103,7 @@ class _MySportsScreenState extends State<MySportsScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'Save Preferences',
+                          'Add Sport',
                           style: GoogleFonts.quicksand(
                             color: Colors.white,
                             fontSize: 12.5,

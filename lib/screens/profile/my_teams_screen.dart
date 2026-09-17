@@ -5,6 +5,7 @@ import '../../core/widgets/glass_back_button.dart';
 import '../../models/my_team_info.dart';
 import '../../models/profile_info.dart';
 import '../team/create_team_screen.dart';
+import 'team_history_screen.dart';
 import 'widgets/my_team_card.dart';
 import 'widgets/profile_sport_chips.dart';
 
@@ -32,6 +33,12 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
   Future<void> _openCreate({String? name}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => CreateTeamScreen(initialTeamName: name ?? '')),
+    );
+  }
+
+  void _openHistory(MyTeamInfo team) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TeamHistoryScreen(team: team)),
     );
   }
 
@@ -157,7 +164,7 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
                           for (final team in complete) ...[
                             MyTeamCard(
                               team: team,
-                              onTap: () => _openCreate(name: team.name),
+                              onTap: () => _openHistory(team),
                               onMenu: () => _showTeamMenu(team),
                             ),
                             const SizedBox(height: 12),

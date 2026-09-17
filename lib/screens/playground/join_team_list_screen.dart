@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
+import '../../core/globalefunction/global_functions.dart';
 import '../auth/providers/location_provider.dart';
 import '../home/providers/home_provider.dart';
-import 'widgets/playground_filter_chip.dart';
-import 'widgets/playground_team_card.dart';
+import '../home/widgets/home_search_bar.dart';
 import '../team/team_detail_screen.dart';
-import '../../core/globalefunction/global_functions.dart';
+import 'widgets/playground_browse_chrome.dart';
+import 'widgets/playground_team_card.dart';
+
+const _sports = [
+  (Icons.sports_cricket_rounded, 'Cricket'),
+  (Icons.sports_soccer_rounded, 'Football'),
+];
+
+const _roles = ['All', 'Bowler', 'Batter', 'All Rounder'];
 
 class JoinTeamListScreen extends StatefulWidget {
   const JoinTeamListScreen({super.key});
@@ -18,12 +27,17 @@ class JoinTeamListScreen extends StatefulWidget {
 }
 
 class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
-  int _selectedFilter = 0; // 0 = All, 1.. = sport index + 1
-  final ScrollController _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  int _sportIndex = 0;
+  bool _isPlayer = true;
+  bool _readyToPlay = true;
+  int _roleIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() => setState(() {}));
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<HomeProvider>();
@@ -36,6 +50,7 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -52,27 +67,36 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
   void _fetchAvailableTeams({bool isRefresh = false}) {
     final provider = context.read<HomeProvider>();
     final locProvider = context.read<LocationProvider>();
-
+    final sportName = _sports[_sportIndex].$2.toLowerCase();
     int? sportId;
-    if (_selectedFilter > 0) {
-      final sports = provider.sportsList;
-      if (_selectedFilter - 1 < sports.length) {
-        sportId = sports[_selectedFilter - 1]['id'] as int?;
+    for (final sport in provider.sportsList) {
+      if ('${sport['name']}'.toLowerCase() == sportName) {
+        sportId = sport['id'] as int?;
+        break;
       }
     }
-
-    double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
-    double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
 
     provider.fetchAvailableTeams(
       isRefresh: isRefresh,
       sportId: sportId,
-      latitude: lat,
-      longitude: lng,
+      latitude: locProvider.latitude != 0.0 ? locProvider.latitude : null,
+      longitude: locProvider.longitude != 0.0 ? locProvider.longitude : null,
     );
   }
 
-  void _openTeamDetail(BuildContext context, Map<String, dynamic> team) {
+  List<Map<String, dynamic>> _visibleTeams(List<Map<String, dynamic>> teams) {
+    final query = _searchController.text.trim().toLowerCase();
+    final sport = _sports[_sportIndex].$2.toLowerCase();
+    return teams.where((team) {
+      final name = '${team['team_name'] ?? team['name'] ?? ''}'.toLowerCase();
+      final sportName = '${team['sport']?['name'] ?? ''}'.toLowerCase();
+      final matchesSport = sportName.isEmpty || sportName == sport;
+      final matchesQuery = query.isEmpty || name.contains(query) || sportName.contains(query);
+      return matchesSport && matchesQuery;
+    }).toList();
+  }
+
+  void _openTeamDetail(Map<String, dynamic> team) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => TeamDetailScreen(team: team)),
     );
@@ -92,130 +116,127 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
     final response = await provider.joinTeamRequest(teamId);
     final success = response != null && response['success'] == true;
 
-    if (mounted) {
-      Navigator.pop(context); // Close loading dialog
-      if (success) {
-        MCP.showMessage(
-          context,
-          "Join request sent successfully.",
-          backgroundColor: Colors.green.shade600,
-          icon: Icons.check_circle_rounded,
-        );
-      } else {
-        Fluttertoast.showToast(
-          msg: provider.errorMessage ?? 'Failed to send join request.',
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
+    if (!mounted) return;
+    Navigator.pop(context);
+    if (success) {
+      MCP.showMessage(
+        context,
+        'Join request sent successfully.',
+        backgroundColor: Colors.green.shade600,
+        icon: Icons.check_circle_rounded,
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: provider.errorMessage ?? 'Failed to send join request.',
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final homeProvider = context.watch<HomeProvider>();
+    final location = context.watch<LocationProvider>().address;
+    final city = location.isNotEmpty ? location : 'Kondapur, Hyderabad';
+    final teams = _visibleTeams(homeProvider.availableTeamsList);
     final isLoading = homeProvider.isFetchingAvailableTeams;
-    final teams = homeProvider.availableTeamsList;
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.authBackgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Row(
                   children: [
                     GlassBackButton(onTap: () => Navigator.of(context).pop()),
-                    const SizedBox(width: 14),
-                    const Text(
+                    const SizedBox(width: 10),
+                    Text(
                       'Join Team',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 38,
+              Expanded(
                 child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   children: [
-                    PlaygroundFilterChip(
-                      label: 'All',
-                      selected: _selectedFilter == 0,
-                      onTap: () {
-                        setState(() => _selectedFilter = 0);
+                    ReadyToPlayBanner(
+                      enabled: _readyToPlay,
+                      onChanged: (value) => setState(() => _readyToPlay = value),
+                    ),
+                    const SizedBox(height: 14),
+                    LimeSportChips(
+                      sports: _sports,
+                      selectedIndex: _sportIndex,
+                      onSelect: (index) {
+                        setState(() => _sportIndex = index);
                         _fetchAvailableTeams(isRefresh: true);
                       },
                     ),
-                    if (homeProvider.isFetchingSports)
+                    const SizedBox(height: 14),
+                    PlayerCaptainToggle(
+                      isPlayer: _isPlayer,
+                      onChanged: (value) => setState(() => _isPlayer = value),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, color: Colors.white54, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          city,
+                          style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    HomeSearchBar(controller: _searchController),
+                    const SizedBox(height: 16),
+                    RoleUnderlineFilters(
+                      roles: _roles,
+                      selectedIndex: _roleIndex,
+                      onSelect: (index) => setState(() => _roleIndex = index),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isLoading)
                       const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(color: AppColors.mintGreen, strokeWidth: 2),
-                          ),
+                        padding: EdgeInsets.only(top: 40),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+                      )
+                    else if (teams.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: Text(
+                          'No teams found.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13.5),
                         ),
                       )
                     else
-                      for (var i = 0; i < homeProvider.sportsList.length; i++) ...[
-                        const SizedBox(width: 10),
-                        PlaygroundFilterChip(
-                          label: homeProvider.sportsList[i]['name'] ?? '',
-                          icon: Icons.sports_rounded,
-                          selected: _selectedFilter == i + 1,
-                          onTap: () {
-                            setState(() => _selectedFilter = i + 1);
-                            _fetchAvailableTeams(isRefresh: true);
-                          },
+                      for (final team in teams)
+                        PlaygroundTeamCard(
+                          team: team,
+                          onTap: () => _openTeamDetail(team),
+                          onJoin: () => _joinTeam(team),
                         ),
-                      ],
+                    if (homeProvider.isFetchingMoreAvailableTeams)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+                      ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.mintGreen))
-                    : teams.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No teams found.',
-                              style: TextStyle(color: Colors.white54, fontSize: 13),
-                            ),
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                            itemCount: teams.length + (homeProvider.isFetchingMoreAvailableTeams ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == teams.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 20),
-                                  child: Center(
-                                    child: CircularProgressIndicator(color: AppColors.mintGreen),
-                                  ),
-                                );
-                              }
-                              final team = teams[index];
-                              return PlaygroundTeamCard(
-                                team: team,
-                                onTap: () => _openTeamDetail(context, team),
-                                onJoin: () => _joinTeam(team),
-                              );
-                            },
-                          ),
               ),
             ],
           ),

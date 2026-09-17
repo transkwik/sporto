@@ -8,6 +8,8 @@ import 'widgets/profile_detail_stats_row.dart';
 import 'widgets/profile_id_card.dart';
 import 'widgets/profile_menu_tile.dart';
 import 'widgets/profile_role_chips.dart';
+import 'notifications_screen.dart';
+import 'settings_screen.dart';
 
 /// Full-screen profile details: Sports ID card, career stats, sport roles,
 /// championship journey, and the main account menu.
@@ -38,7 +40,11 @@ class ProfileDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                        );
+                      },
                       child: Container(
                         width: 40,
                         height: 40,
@@ -77,6 +83,16 @@ class ProfileDetailsScreen extends StatelessWidget {
                               Navigator.of(context).pushNamed(AppRoutes.myTeams);
                             case 'My Tournaments':
                               Navigator.of(context).pushNamed(AppRoutes.myTournaments);
+                            case 'Notifications':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsScreen(),
+                                ),
+                              );
+                            case 'Settings':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                              );
                           }
                         },
                       ),

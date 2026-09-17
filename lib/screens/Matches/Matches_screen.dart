@@ -11,6 +11,7 @@ import '../home/widgets/live_match_spotlight_card.dart';
 import '../home/widgets/section_header.dart';
 import '../home/widgets/sport_icon_button.dart';
 import 'lmatch_detail_screen.dart';
+import '../profile/notifications_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key});
@@ -144,7 +145,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
         HomeHeader(
           walletBalance: '₹ 500',
           onAddFunds: () {},
-          onNotificationsTap: () {},
+          onNotificationsTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            );
+          },
         ),
         const SizedBox(height: 18),
         const HomeSearchBar(),

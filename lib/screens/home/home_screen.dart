@@ -16,6 +16,7 @@ import '../Matches/Matches_screen.dart';
 import '../live_matches/live_matches_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_screen.dart';
+import '../profile/notifications_screen.dart';
 import '../tournament/tournament_detail_screen.dart';
 import 'widgets/ads_banner.dart';
 import 'widgets/home_bottom_nav.dart';
@@ -187,7 +188,11 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         HomeHeader(
           walletBalance: '₹ 500',
           onAddFunds: () {},
-          onNotificationsTap: () {},
+          onNotificationsTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            );
+          },
         ),
         const SizedBox(height: 10),
         Center(

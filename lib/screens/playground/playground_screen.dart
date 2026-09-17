@@ -3,19 +3,20 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../models/playground_player_info.dart';
-import '../../models/playground_team_info.dart'; // Still used for dummy players
 import '../auth/providers/location_provider.dart';
 import '../home/providers/home_provider.dart';
 import '../home/widgets/home_search_bar.dart';
 import '../team/create_team_screen.dart';
 import '../team/team_detail_screen.dart';
 import 'join_team_list_screen.dart';
+import 'find_player_screen.dart';
 import 'my_team_screen.dart';
 import 'widgets/playground_action_button.dart';
 import 'widgets/playground_filter_chip.dart';
 import 'widgets/playground_header.dart';
 import 'widgets/playground_player_card.dart';
 import 'widgets/playground_team_card.dart';
+import '../profile/notifications_screen.dart';
 
 /// Playground tab: discover teams looking for players and players available
 /// nearby, plus quick actions for creating/joining a team.
@@ -140,7 +141,11 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
           walletBalance: '₹ 500',
           onLocationTap: () {},
           onAddFunds: () {},
-          onNotificationsTap: () {},
+          onNotificationsTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            );
+          },
         ),
         const SizedBox(height: 18),
         const HomeSearchBar(
@@ -181,7 +186,9 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
               child: PlaygroundActionButton(
                 icon: Icons.person_search_rounded,
                 label: 'Find Player',
-                onTap: () {},
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FindPlayerScreen()),
+                ),
               ),
             ),
           ],

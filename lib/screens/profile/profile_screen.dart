@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/profile_info.dart';
 import '../../routes/app_routes.dart';
 import 'profile_details_screen.dart';
+import 'settings_screen.dart';
+import 'notifications_screen.dart';
 import 'widgets/championship_journey_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_tile.dart';
@@ -35,6 +37,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.of(context).pushNamed(AppRoutes.myTeams);
       case 'My Tournaments':
         Navigator.of(context).pushNamed(AppRoutes.myTournaments);
+      case 'Notifications':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+        );
+      case 'Settings':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        );
     }
   }
 

@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../home/providers/home_provider.dart';
 import 'join_team_payment_screen.dart';
+import 'invite_player_screen.dart';
 import 'widgets/captain_card.dart';
 import 'widgets/entry_fee_card.dart';
 import 'widgets/squad_list_card.dart';
@@ -64,7 +65,16 @@ class TeamDetailScreen extends StatelessWidget {
                       maxPlayers: maxPlayers,
                     ),
                     const SizedBox(height: 14),
-                    const TeamNeedsBanner(position: 'Any'),
+                    TeamNeedsBanner(
+                      position: 'Any',
+                      onInvite: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => InvitePlayerScreen(team: team),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 26),
                     const Text(
                       'Captain',

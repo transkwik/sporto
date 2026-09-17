@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
+import 'my_tournament_info.dart';
 
 /// Why a team still needs work on the My Teams list.
 enum MyTeamIssue { none, captainMissing, missingPlayers }
+
+/// Past tournament recap shown on Team History.
+class TeamHistoryTournament {
+  const TeamHistoryTournament({
+    required this.title,
+    required this.dateRange,
+    required this.location,
+    required this.resultLabel,
+    required this.championTeam,
+    this.matches = const [],
+  });
+
+  final String title;
+  final String dateRange;
+  final String location;
+  final String resultLabel;
+  final String championTeam;
+  final List<MyTournamentMatchResult> matches;
+}
 
 /// One of the user's teams on Profile → My Teams.
 class MyTeamInfo {
@@ -17,6 +37,10 @@ class MyTeamInfo {
     required this.playersCount,
     required this.maxPlayers,
     required this.tournamentsPlayed,
+    this.city = '',
+    this.matchesCount = 0,
+    this.prizeEarned = 0,
+    this.history = const [],
     this.issue = MyTeamIssue.none,
     this.highlighted = false,
   });
@@ -32,6 +56,10 @@ class MyTeamInfo {
   final int playersCount;
   final int maxPlayers;
   final int tournamentsPlayed;
+  final String city;
+  final int matchesCount;
+  final int prizeEarned;
+  final List<TeamHistoryTournament> history;
   final MyTeamIssue issue;
   final bool highlighted;
 
@@ -50,6 +78,23 @@ class MyTeamInfo {
   }
 }
 
+const _asiaCupMatches = [
+  MyTournamentMatchResult(teamA: 'Hyd Highlanders', scoreA: '162/6', teamB: 'Delhi Warriors', scoreB: '148/9', matchLabel: 'League — Match 1'),
+  MyTournamentMatchResult(teamA: 'Hyd Highlanders', scoreA: '162/6', teamB: 'Zoto Warrior', scoreB: '148/9', matchLabel: 'League — Match 1'),
+  MyTournamentMatchResult(teamA: 'Hyd Highlanders', scoreA: '162/6', teamB: 'Thunder Titans', scoreB: '148/9', matchLabel: 'League — Match 1'),
+  MyTournamentMatchResult(teamA: 'Hyd Highlanders', scoreA: '162/6', teamB: 'Royal Smashers', scoreB: '148/9', matchLabel: 'League — Match 1'),
+  MyTournamentMatchResult(teamA: 'Hyd Highlanders', scoreA: '162/6', teamB: 'Delhi Warriors', scoreB: '148/9', matchLabel: 'League — Match 1'),
+];
+
+const _asiaCup2026 = TeamHistoryTournament(
+  title: 'Asia Cup 2026',
+  dateRange: 'Aug 2 – 10, 2026',
+  location: 'Hyderabad',
+  resultLabel: 'Champions',
+  championTeam: 'Hyd Highlanders',
+  matches: _asiaCupMatches,
+);
+
 const List<MyTeamInfo> dummyMyTeams = [
   MyTeamInfo(
     id: 'zoto-warrior',
@@ -58,11 +103,15 @@ const List<MyTeamInfo> dummyMyTeams = [
     avatarInitials: 'ZW',
     avatarColor: Color(0xFF5C3A2E),
     captainName: 'Shravan Prajapati',
+    city: 'Hyderabad',
     wins: 18,
     titles: 3,
     playersCount: 5,
     maxPlayers: 5,
-    tournamentsPlayed: 12,
+    tournamentsPlayed: 2,
+    matchesCount: 9,
+    prizeEarned: 50000,
+    history: [_asiaCup2026, _asiaCup2026],
     highlighted: true,
   ),
   MyTeamInfo(
