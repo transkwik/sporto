@@ -116,7 +116,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               }
 
               final title = t['name'] ?? 'Unnamed Tournament';
-              final location = t['location'] is Map ? (t['location']['name'] ?? 'Unknown Location') : (t['location']?.toString() ?? 'Unknown Location');
+              final location = t['location'] is Map
+                  ? (t['location']['name'] ?? 'Unknown Location')
+                  : (t['location']?.toString() ?? 'Unknown Location');
               final teamsCount = t['maximum_teams']?.toString() ?? 'Open';
               final entryFee = t['registration_fee'] != null
                   ? '₹${t['registration_fee']}'
@@ -128,6 +130,16 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               // Best Batsman / Best Bowler from custom fields? Right now we just set them to null as it's not in the JSON schema.
               final String? bestBatsmanPrize = null;
               final String? bestBowlerPrize = null;
+
+              bool isRegistrationClosed = false;
+              if (t['registration_end_at'] != null) {
+                try {
+                  final regEnd = DateTime.parse(t['registration_end_at']);
+                  if (regEnd.isBefore(DateTime.now())) {
+                    isRegistrationClosed = true;
+                  }
+                } catch (_) {}
+              }
 
               final rawPrizes = t['prizes'] as List<dynamic>? ?? [];
               final visiblePrizes = _showAllPrizes
@@ -335,60 +347,62 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: GestureDetector(
-                      onTap: () {
-                        if (t['my_registration'] != null && t['team'] != null) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => TeamRosterScreen(
-                                team: t['team'],
-                                tournament: t,
+                  if (!isRegistrationClosed || t['my_registration'] != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (t['my_registration'] != null &&
+                              t['team'] != null) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TeamRosterScreen(
+                                  team: t['team'],
+                                  tournament: t,
+                                ),
                               ),
-                            ),
-                          );
-                        } else {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => SelectTeamScreen(tournament: t),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        width: double.infinity,
-                        height: 54,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.bannerGradient,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              t['my_registration'] != null
-                                  ? 'View My Team'
-                                  : 'Create Team',
-                              style: const TextStyle(
+                            );
+                          } else {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SelectTeamScreen(tournament: t),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          width: double.infinity,
+                          height: 54,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.bannerGradient,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                t['my_registration'] != null
+                                    ? 'View My Team'
+                                    : 'Register',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
                                 color: Colors.white,
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w700,
+                                size: 18,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               );
             },
@@ -456,38 +470,46 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  teamA,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const Text(
-                'VS',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  teamB,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: Text(
+          //         teamA,
+          //         style: const TextStyle(
+          //           color: Colors.white,
+          //           fontSize: 15,
+          //           fontWeight: FontWeight.w700,
+          //         ),
+          //       ),
+          //     ),
+          //     const Text(
+          //       'VS',
+          //       style: TextStyle(
+          //         color: Colors.white54,
+          //         fontSize: 11,
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //     Expanded(
+          //       child: Text(
+          //         teamB,
+          //         textAlign: TextAlign.right,
+          //         style: const TextStyle(
+          //           color: Colors.white,
+          //           fontSize: 15,
+          //           fontWeight: FontWeight.w700,
+          //         ),
+          //       ),
+          //     ),
+          //   ],
+          // ),
+          Text(
+            t['name'] ?? 'Unnamed Tournament',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 18),
           Container(height: 1, color: AppColors.glassBorder),

@@ -6,9 +6,16 @@ import '../../../core/constants/app_colors.dart';
 /// Team" screen: avatar, captain, player count, and a "Complete Team" pill
 /// prompting the user to finish filling out the squad.
 class TeamRosterCard extends StatelessWidget {
-  const TeamRosterCard({super.key, required this.team, this.onMenuTap, this.onCompleteTap});
+  const TeamRosterCard({
+    super.key,
+    required this.team,
+    required this.requiredPlayers,
+    this.onMenuTap,
+    this.onCompleteTap,
+  });
 
   final Map<String, dynamic> team;
+  final int requiredPlayers;
   final VoidCallback? onMenuTap;
   final VoidCallback? onCompleteTap;
 
@@ -54,11 +61,11 @@ class TeamRosterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teamName = team['name'] ?? team['team_name'] ?? 'Unnamed Team';
-    final captainName = team['captain']?['name'] ?? 'N/A';
-    final playersCount = team['total_players']?.toString() ?? team['player_count']?.toString() ?? '0';
-    // If sport is missing, we could fallback to '11' or pass it down. 
-    // Here we just fallback to '11' since this card only receives the team map.
-    final maxPlayers = team['sport']?['max_players']?.toString() ?? '11';
+    final captainName = team['captain']?['profile']?['full_name'] ?? team['captain']?['name'] ?? 'N/A';
+    final playersCount =
+        team['total_players']?.toString() ??
+        team['player_count']?.toString() ??
+        '0';
     final tournamentsPlayed = team['tournaments_played']?.toString() ?? '0';
     final updatedLabel = _timeAgo(team['updated_at']);
 
@@ -79,10 +86,17 @@ class TeamRosterCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: _getColor(teamName), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: _getColor(teamName),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Text(
                   _getInitials(teamName),
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -92,32 +106,49 @@ class TeamRosterCard extends StatelessWidget {
                   children: [
                     Text(
                       teamName,
-                      style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text.rich(
                       TextSpan(
                         text: 'Captain: ',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12.5),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12.5,
+                        ),
                         children: [
                           TextSpan(
                             text: captainName,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$playersCount/$maxPlayers Players • $tournamentsPlayed Tournaments Played',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      '$playersCount/$requiredPlayers Players • $tournamentsPlayed Tournaments Played',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
               GestureDetector(
                 onTap: onMenuTap,
-                child: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+                child: const Icon(
+                  Icons.more_vert_rounded,
+                  color: Colors.white54,
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -136,7 +167,10 @@ class TeamRosterCard extends StatelessWidget {
                 GestureDetector(
                   onTap: onCompleteTap,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.glassFillLight,
                       borderRadius: BorderRadius.circular(20),
@@ -144,7 +178,11 @@ class TeamRosterCard extends StatelessWidget {
                     ),
                     child: const Text(
                       'Complete Team',
-                      style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),

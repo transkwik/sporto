@@ -11,6 +11,7 @@ import 'register_tournament.dart';
 import 'widgets/team_card.dart';
 import 'widgets/registration_stepper.dart';
 import 'widgets/edit_team_dialog.dart';
+import 'add_players_screen.dart';
 
 /// Team picker shown after tapping "Create Team" on a tournament detail
 /// screen: lets the user create a new team or select one of their
@@ -163,15 +164,50 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                             ),
                           )
                         else
-                          for (int i = 0; i < teams.length; i++)
-                            TeamCard(
-                              team: teams[i],
+                          ...teams.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final team = entry.value;
+                            final List<dynamic> gameRules = List<dynamic>.from(widget.tournament['game_rules'] ?? []);
+                            final List<dynamic> sportRules = List<dynamic>.from(widget.tournament['sport_rules'] ?? []);
+                            final List<dynamic> allRules = [...gameRules, ...sportRules];
+
+                            int requiredPlayers = 11;
+                            for (final dynamic rule in allRules) {
+                              if (rule is Map && rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
+                                final overrideVal = rule['override_value']?.toString();
+                                final defaultVal = rule['default_value']?.toString();
+                                
+                                if (overrideVal != null && overrideVal.trim().isNotEmpty && overrideVal != '0' && overrideVal != '0.0') {
+                                  requiredPlayers = double.tryParse(overrideVal)?.toInt() ?? 11;
+                                  break;
+                                } else if (defaultVal != null && defaultVal.trim().isNotEmpty && defaultVal != '0' && defaultVal != '0.0') {
+                                  requiredPlayers = double.tryParse(defaultVal)?.toInt() ?? 11;
+                                  break;
+                                }
+                              }
+                            }
+                            if (requiredPlayers == 0) requiredPlayers = 11;
+                            
+                            return TeamCard(
+                              team: team,
                               selected: _selectedIndex == i,
+                              requiredPlayers: requiredPlayers,
+                              onAddPlayers: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => AddPlayersScreen(
+                                      team: team,
+                                      tournament: widget.tournament,
+                                    ),
+                                  ),
+                                );
+                              },
                               onSelect: () =>
                                   setState(() => _selectedIndex = i),
-                              onEdit: () => _handleEdit(teams[i]),
-                              onDelete: () => _handleDelete(teams[i]),
-                            ),
+                              onEdit: () => _handleEdit(team),
+                              onDelete: () => _handleDelete(team),
+                            );
+                          }),
                       ],
                     );
                   },

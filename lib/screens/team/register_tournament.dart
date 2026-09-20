@@ -22,7 +22,7 @@ class RegisterNewTeam extends StatefulWidget {
 
 class _RegisterNewTeamState extends State<RegisterNewTeam> {
   final TextEditingController _teamNameController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
+  // final TextEditingController _cityController = TextEditingController();
 
   bool _hasPhoto = false;
   bool _isUploadingPhoto = false;
@@ -33,21 +33,20 @@ class _RegisterNewTeamState extends State<RegisterNewTeam> {
   void initState() {
     super.initState();
     _teamNameController.addListener(_handleInputChanged);
-    _cityController.addListener(_handleInputChanged);
+    // _cityController.addListener(_handleInputChanged);
   }
 
   void _handleInputChanged() => setState(() {});
 
-  bool get _isTeamReady => 
-      _teamNameController.text.trim().isNotEmpty && 
-      _cityController.text.trim().isNotEmpty;
+  bool get _isTeamReady => _teamNameController.text.trim().isNotEmpty;
+  // _cityController.text.trim().isNotEmpty;
 
   @override
   void dispose() {
     _teamNameController.removeListener(_handleInputChanged);
     _teamNameController.dispose();
-    _cityController.removeListener(_handleInputChanged);
-    _cityController.dispose();
+    // _cityController.removeListener(_handleInputChanged);
+    // _cityController.dispose();
     super.dispose();
   }
 
@@ -106,7 +105,7 @@ class _RegisterNewTeamState extends State<RegisterNewTeam> {
     final params = {
       "sport_id": 1, // Defaulting to 1 as requested in mock
       "team_name": _teamNameController.text.trim(),
-      "city": _cityController.text.trim(),
+      // "city": _cityController.text.trim(),
       "visibility": 1, // Static value 1 as requested
       if (_uploadedPhotoPath != null) "team_logo_path": _uploadedPhotoPath,
     };
@@ -173,12 +172,12 @@ class _RegisterNewTeamState extends State<RegisterNewTeam> {
                       hint: 'Enter your team name',
                       controller: _teamNameController,
                     ),
-                    const SizedBox(height: 20),
-                    ProfileTextField(
-                      label: 'City',
-                      hint: 'Enter your city',
-                      controller: _cityController,
-                    ),
+                    // const SizedBox(height: 20),
+                    // ProfileTextField(
+                    //   label: 'City',
+                    //   hint: 'Enter your city',
+                    //   controller: _cityController,
+                    // ),
                     const SizedBox(height: 24),
                     Text(
                       'Team Logo or Photo',

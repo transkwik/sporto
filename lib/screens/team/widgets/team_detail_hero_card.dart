@@ -15,7 +15,7 @@ class TeamDetailHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final teamName = team['team_name'] ?? team['name'] ?? 'Unnamed Team';
     final sportName = team['sport']?['name'] ?? 'Sport';
-    final captainName = team['captain']?['name'] ?? 'Unknown Captain';
+    final captainName = team['captain']?['profile']?['full_name'] ?? team['captain']?['name'] ?? 'Unknown Captain';
     final location = team['city'] ?? 'Unknown';
     final isCricket = sportName.toString().toLowerCase() == 'cricket';
 

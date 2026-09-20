@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 
+import 'package:intl/intl.dart';
+
 /// Glass row card for a single entry in the "Browse Tournaments" list.
 class TournamentCard extends StatelessWidget {
   const TournamentCard({super.key, required this.tournament, this.onTap});
@@ -14,17 +16,31 @@ class TournamentCard extends StatelessWidget {
     final title = tournament['title'] ?? tournament['name'] ?? 'Unnamed Tournament';
     final sportName = tournament['sport']?['name'] ?? 'Sport';
     final location = tournament['location'] ?? 'Unknown Location';
-    final startString = tournament['start_date'];
-    final endString = tournament['end_date'];
+    final startString = tournament['tournament_start_at'] ?? tournament['start_date'];
+    final regEndString = tournament['registration_end_at'] ?? tournament['end_date'];
     
-    // Fallback UI stuff since the API doesn't provide all visual fields yet
     String dateLabel = 'TBA';
-    if (startString != null && endString != null) {
-      dateLabel = 'Starts $startString - $endString';
-    }
-    final prize = '₹1,50,000 Prize Pool'; // Fallback
-    final statLabel = '6 / 16 Teams Registered'; // Fallback
-    final footerLabel = 'Entry Fee: ₹1,500\nLast Date: TBA'; // Fallback
+    try {
+      if (startString != null) {
+        final parsed = DateTime.parse(startString);
+        dateLabel = 'Starts ${DateFormat('MMM dd, yyyy').format(parsed)}';
+      }
+    } catch (_) {}
+
+    String footerLabel = 'Last Date: TBA';
+    try {
+      if (regEndString != null) {
+        final parsed = DateTime.parse(regEndString);
+        footerLabel = 'Reg Ends: ${DateFormat('MMM dd, yyyy').format(parsed)}';
+      }
+    } catch (_) {}
+
+    final prizeAmount = tournament['prize_amount'] ?? 0;
+    final prize = prizeAmount > 0 ? '₹$prizeAmount Prize Pool' : 'No Prize Pool';
+    
+    final maxTeams = tournament['maximum_teams'] ?? 0;
+    final regTeams = tournament['registered_teams'] ?? 0;
+    final statLabel = '$regTeams / $maxTeams Teams Registered';
     
     String initials = '?';
     if (title.isNotEmpty) {

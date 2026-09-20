@@ -91,8 +91,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       if (isNewUser) {
         Get.to(() => CompleteProfileScreen());
       } else {
-        Get.to(() => CompleteProfileScreen());
-        // Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        // Get.to(() => CompleteProfileScreen());
+        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

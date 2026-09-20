@@ -162,7 +162,9 @@ class UserApis {
   }
 
   getMyTeams(int page, int perPage) async {
-    var response = await ApiHelper().getTypeGet('my-teams?page=$page&per_page=$perPage');
+    var response = await ApiHelper().getTypeGet(
+      'my-teams?page=$page&per_page=$perPage',
+    );
     log(response.toString());
     return response;
   }
@@ -174,19 +176,25 @@ class UserApis {
   }
 
   getLiveMatches(dynamic sportId, int page, int perPage) async {
-    var response = await ApiHelper().getTypeGet('matches/live?sport_id=$sportId&page=$page&per_page=$perPage');
+    var response = await ApiHelper().getTypeGet(
+      'matches/live?sport_id=$sportId&page=$page&per_page=$perPage',
+    );
     log(response.toString());
     return response;
   }
 
   getUpcomingMatches(dynamic sportId, int page, int perPage) async {
-    var response = await ApiHelper().getTypeGet('matches/upcoming?sport_id=$sportId&page=$page&per_page=$perPage');
+    var response = await ApiHelper().getTypeGet(
+      'matches/upcoming?sport_id=$sportId&page=$page&per_page=$perPage',
+    );
     log(response.toString());
     return response;
   }
 
   getAllMatches(dynamic sportId, int page, int perPage) async {
-    var response = await ApiHelper().getTypeGet('matches?sport_id=$sportId&page=$page&per_page=$perPage');
+    var response = await ApiHelper().getTypeGet(
+      'matches?sport_id=$sportId&page=$page&per_page=$perPage',
+    );
     log(response.toString());
     return response;
   }

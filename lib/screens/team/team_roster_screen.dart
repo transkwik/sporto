@@ -25,10 +25,30 @@ class TeamRosterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playersCountStr = team['total_players']?.toString() ?? team['player_count']?.toString() ?? '0';
-    final maxPlayersStr = team['sport']?['max_players']?.toString() ?? tournament['sport']?['max_players']?.toString() ?? '11';
     final int playersCount = int.tryParse(playersCountStr) ?? 0;
-    final int maxPlayers = int.tryParse(maxPlayersStr) ?? 11;
-    final bool isFull = playersCount >= maxPlayers;
+    
+    final List<dynamic> gameRules = List<dynamic>.from(tournament['game_rules'] ?? []);
+    final List<dynamic> sportRules = List<dynamic>.from(tournament['sport_rules'] ?? []);
+    final List<dynamic> allRules = [...gameRules, ...sportRules];
+
+    int requiredPlayers = 11;
+    for (final dynamic rule in allRules) {
+      if (rule is Map && rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
+        final overrideVal = rule['override_value']?.toString();
+        final defaultVal = rule['default_value']?.toString();
+        
+        if (overrideVal != null && overrideVal.trim().isNotEmpty && overrideVal != '0' && overrideVal != '0.0') {
+          requiredPlayers = double.tryParse(overrideVal)?.toInt() ?? 11;
+          break;
+        } else if (defaultVal != null && defaultVal.trim().isNotEmpty && defaultVal != '0' && defaultVal != '0.0') {
+          requiredPlayers = double.tryParse(defaultVal)?.toInt() ?? 11;
+          break;
+        }
+      }
+    }
+    if (requiredPlayers == 0) requiredPlayers = 11;
+    
+    final bool isFull = playersCount >= requiredPlayers;
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
@@ -59,7 +79,7 @@ class TeamRosterScreen extends StatelessWidget {
                       style: TextStyle(color: AppColors.amberAccent, fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 14),
-                    TeamRosterCard(team: team, onMenuTap: () {}, onCompleteTap: isFull ? null : () => _openCreateTeam(context)),
+                    TeamRosterCard(team: team, requiredPlayers: requiredPlayers, onMenuTap: () {}, onCompleteTap: isFull ? null : () => _openCreateTeam(context)),
                     if (!isFull) ...[
                       const SizedBox(height: 24),
                       GestureDetector(

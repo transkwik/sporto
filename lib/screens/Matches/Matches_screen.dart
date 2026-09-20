@@ -96,11 +96,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 
   Widget _buildMatchCard(Map<String, dynamic> matchData, double? width) {
-    final teamA = matchData['participants']?['team_a']?['name'] ?? 'Team A';
-    final teamB = matchData['participants']?['team_b']?['name'] ?? 'Team B';
-    final sportName = matchData['tournament']?['sport']?['name'] ?? 'Unknown Sport';
-    final title = matchData['tournament']?['name'] ?? 'Tournament';
-    final status = matchData['status'] ?? 'Scheduled';
+    final match = matchData['match'];
+    final status = match?['status'] ?? 'Scheduled';
+    
+    final sportName = matchData['sport']?['name'] ?? 'Unknown Sport';
+    final title = matchData['format']?['name'] ?? 'Tournament';
+    
+    final teams = matchData['teams'] as List<dynamic>? ?? [];
+    final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
+    final teamB = teams.length > 1 ? teams[1]['name'] : 'Team B';
 
     final matchInfo = MatchInfo(
       sport: sportName,

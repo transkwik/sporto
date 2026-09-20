@@ -12,6 +12,8 @@ class TeamCard extends StatelessWidget {
     required this.team,
     required this.selected,
     required this.onSelect,
+    required this.requiredPlayers,
+    this.onAddPlayers,
     this.onEdit,
     this.onDelete,
   });
@@ -19,6 +21,8 @@ class TeamCard extends StatelessWidget {
   final Map<String, dynamic> team;
   final bool selected;
   final VoidCallback onSelect;
+  final int requiredPlayers;
+  final VoidCallback? onAddPlayers;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -60,9 +64,8 @@ class TeamCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teamName = team['team_name'] ?? 'Unnamed Team';
-    final captainId = team['captain_user_id']?.toString() ?? 'N/A';
-    final playersCount = team['total_players']?.toString() ?? '0';
-    final maxPlayers = team['sport']?['max_players']?.toString() ?? '11';
+    final captainName = team['captain']?['profile']?['full_name'] ?? team['captain']?['name'] ?? 'N/A';
+    final playersCount = int.tryParse(team['total_players']?.toString() ?? '0') ?? 0;
     final tournamentsPlayed = team['tournaments_played']?.toString() ?? '0';
     final updatedLabel = _formatDate(team['updated_at']);
 
@@ -103,11 +106,11 @@ class TeamCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text.rich(
                       TextSpan(
-                        text: 'Captain ID: ',
+                        text: 'Captain: ',
                         style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
                         children: [
                           TextSpan(
-                            text: captainId,
+                            text: captainName,
                             style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -115,7 +118,7 @@ class TeamCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$playersCount/$maxPlayers Players • $tournamentsPlayed Tournaments Played',
+                      '$playersCount/$requiredPlayers Players • $tournamentsPlayed Tournaments Played',
                       style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
                     ),
                   ],
@@ -163,7 +166,23 @@ class TeamCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Text('Updated $updatedLabel', style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5)),
+              if (playersCount < requiredPlayers)
+                GestureDetector(
+                  onTap: onAddPlayers,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.roseTag,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Add Team Players',
+                      style: GoogleFonts.quicksand(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                )
+              else
+                Text('Updated $updatedLabel', style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5)),
               const Spacer(),
               _SelectionPill(selected: selected, onTap: onSelect),
             ],

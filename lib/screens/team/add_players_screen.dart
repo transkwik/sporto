@@ -170,9 +170,29 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final int maxPlayers = int.tryParse(widget.team['sport']?['max_players']?.toString() ?? '11') ?? 11;
+    final List<dynamic> gameRules = List<dynamic>.from(widget.tournament['game_rules'] ?? []);
+    final List<dynamic> sportRules = List<dynamic>.from(widget.tournament['sport_rules'] ?? []);
+    final List<dynamic> allRules = [...gameRules, ...sportRules];
+
+    int requiredPlayers = 11;
+    for (final dynamic rule in allRules) {
+      if (rule is Map && rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
+        final overrideVal = rule['override_value']?.toString();
+        final defaultVal = rule['default_value']?.toString();
+        
+        if (overrideVal != null && overrideVal.trim().isNotEmpty && overrideVal != '0' && overrideVal != '0.0') {
+          requiredPlayers = double.tryParse(overrideVal)?.toInt() ?? 11;
+          break;
+        } else if (defaultVal != null && defaultVal.trim().isNotEmpty && defaultVal != '0' && defaultVal != '0.0') {
+          requiredPlayers = double.tryParse(defaultVal)?.toInt() ?? 11;
+          break;
+        }
+      }
+    }
+    if (requiredPlayers == 0) requiredPlayers = 11;
+
     final int totalCount = _players.length;
-    final bool isFull = totalCount >= maxPlayers;
+    final bool isFull = totalCount >= requiredPlayers;
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
@@ -198,7 +218,7 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                   children: [
-                    TeamRosterCard(team: widget.team),
+                    TeamRosterCard(team: widget.team, requiredPlayers: requiredPlayers),
                     const SizedBox(height: 24),
                     Text(
                       'Team Players',
@@ -253,7 +273,7 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                     Row(
                       children: [
                         Text(
-                          '$totalCount/$maxPlayers Players',
+                          '$totalCount/$requiredPlayers Players',
                           style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         const Spacer(),

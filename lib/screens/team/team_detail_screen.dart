@@ -25,7 +25,7 @@ class TeamDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxPlayers = team['total_players'] ?? 11;
     final playersCount = team['members']?['current_count'] ?? 0;
-    final captainName = team['captain']?['name'] ?? 'Unknown Captain';
+    final captainName = team['captain']?['profile']?['full_name'] ?? team['captain']?['name'] ?? 'Unknown Captain';
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
