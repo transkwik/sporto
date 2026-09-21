@@ -8,6 +8,7 @@ import '../screens/onboarding/onboarding_watch_screen.dart';
 import '../screens/profile/my_sports_screen.dart';
 import '../screens/profile/my_teams_screen.dart';
 import '../screens/profile/my_tournaments_screen.dart';
+import '../screens/home/rankings_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import 'app_routes.dart';
 
@@ -41,6 +42,8 @@ class AppRouter {
         return _build(const MyTeamsScreen(), settings);
       case AppRoutes.myTournaments:
         return _build(const MyTournamentsScreen(), settings);
+      case AppRoutes.rankings:
+        return _build(const RankingsScreen(), settings);
       default:
         return _build(
           Scaffold(

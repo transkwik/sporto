@@ -17,9 +17,12 @@ import '../live_matches/live_matches_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/notifications_screen.dart';
+import '../../routes/app_routes.dart';
+import 'attention_hub_screen.dart';
 import '../tournament/tournament_detail_screen.dart';
 import '../tournament/tournaments_list_screen.dart';
 import 'widgets/ads_banner.dart';
+import 'widgets/attention_banner.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -201,6 +204,14 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         ),
         const SizedBox(height: 18),
         const HomeSearchBar(),
+        const SizedBox(height: 16),
+        AttentionBanner(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AttentionHubScreen()),
+            );
+          },
+        ),
         const SizedBox(height: 20),
         Consumer<HomeProvider>(
           builder: (context, homeProvider, child) {
@@ -328,12 +339,18 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         ),
         const SizedBox(height: 22),
         Row(
-          children: const [
-            Expanded(child: QuickActionButton(icon: Icons.groups_rounded, label: 'My Teams')),
-            SizedBox(width: 10),
-            Expanded(child: QuickActionButton(icon: Icons.event_note_rounded, label: 'Fixtures')),
-            SizedBox(width: 10),
-            Expanded(child: QuickActionButton(icon: Icons.leaderboard_rounded, label: 'Rankings')),
+          children: [
+            const Expanded(child: QuickActionButton(icon: Icons.groups_rounded, label: 'My Teams')),
+            const SizedBox(width: 10),
+            const Expanded(child: QuickActionButton(icon: Icons.event_note_rounded, label: 'Fixtures')),
+            const SizedBox(width: 10),
+            Expanded(
+              child: QuickActionButton(
+                icon: Icons.leaderboard_rounded,
+                label: 'Rankings',
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.rankings),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 25),
