@@ -10,16 +10,28 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get light {
+    // Route transitions paint [ColorScheme.surface] / [canvasColor] before the
+    // destination Scaffold draws. Keep these dark so Profile → Wallet (and
+    // other glass screens) do not flash the old light canvas.
+    const pageCanvas = AppColors.authBackgroundBottom;
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: pageCanvas,
+      canvasColor: pageCanvas,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         secondary: AppColors.accent,
-        surface: AppColors.surface,
+        surface: pageCanvas,
         error: AppColors.error,
         brightness: Brightness.light,
+      ).copyWith(
+        surface: pageCanvas,
+        surfaceContainerLowest: pageCanvas,
+        surfaceContainerLow: pageCanvas,
+        surfaceContainer: pageCanvas,
+        surfaceContainerHigh: pageCanvas,
+        surfaceContainerHighest: pageCanvas,
       ),
       fontFamily: AppTextStyles.fontFamily,
       textTheme: const TextTheme(
@@ -32,7 +44,7 @@ class AppTheme {
         labelSmall: AppTextStyles.caption,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.authBackgroundBottom,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,

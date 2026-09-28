@@ -6,6 +6,10 @@ import '../auth/providers/auth_provider.dart';
 import 'profile_details_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
+import 'my_achievements_screen.dart';
+import 'my_awards_screen.dart';
+import 'my_fan_tips_screen.dart';
+import 'wallet_transactions_screen.dart';
 import 'widgets/championship_journey_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_tile.dart';
@@ -39,6 +43,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.of(context).pushNamed(AppRoutes.myTeams);
       case 'My Tournaments':
         Navigator.of(context).pushNamed(AppRoutes.myTournaments);
+      case 'All Tournaments':
+        Navigator.of(context).pushNamed(AppRoutes.allTournaments);
+      case 'Achievements':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
+        );
+      case 'My Awards':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyAwardsScreen()),
+        );
+      case 'My Fan Tips':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyFanTipsScreen()),
+        );
+      case 'Wallet & Transactions':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+        );
       case 'Notifications':
         Navigator.of(
           context,

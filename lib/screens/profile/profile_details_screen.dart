@@ -9,6 +9,10 @@ import 'widgets/profile_id_card.dart';
 import 'widgets/profile_menu_tile.dart';
 import 'widgets/profile_role_chips.dart';
 import 'notifications_screen.dart';
+import 'my_achievements_screen.dart';
+import 'my_awards_screen.dart';
+import 'my_fan_tips_screen.dart';
+import 'wallet_transactions_screen.dart';
 import 'settings_screen.dart';
 
 /// Full-screen profile details: Sports ID card, career stats, sport roles,
@@ -70,7 +74,14 @@ class ProfileDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     const ProfileRoleChips(roles: dummyProfileSportRoles),
                     const SizedBox(height: 20),
-                    ChampionshipJourneyCard(compact: false, onView: () {}),
+                    ChampionshipJourneyCard(
+                      compact: false,
+                      onView: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 16),
                     for (final item in dummyProfileMainMenu) ...[
                       ProfileMenuTile(
@@ -83,6 +94,24 @@ class ProfileDetailsScreen extends StatelessWidget {
                               Navigator.of(context).pushNamed(AppRoutes.myTeams);
                             case 'My Tournaments':
                               Navigator.of(context).pushNamed(AppRoutes.myTournaments);
+                            case 'All Tournaments':
+                              Navigator.of(context).pushNamed(AppRoutes.allTournaments);
+                            case 'Achievements':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
+                              );
+                            case 'My Awards':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MyAwardsScreen()),
+                              );
+                            case 'My Fan Tips':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MyFanTipsScreen()),
+                              );
+                            case 'Wallet & Transactions':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+                              );
                             case 'Notifications':
                               Navigator.of(context).push(
                                 MaterialPageRoute(

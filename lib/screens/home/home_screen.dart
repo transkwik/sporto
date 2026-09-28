@@ -17,12 +17,15 @@ import '../live_matches/live_matches_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/notifications_screen.dart';
+import '../profile/wallet_transactions_screen.dart';
 import '../../routes/app_routes.dart';
 import 'attention_hub_screen.dart';
 import '../tournament/tournament_detail_screen.dart';
 import '../tournament/tournaments_list_screen.dart';
+import 'prize_details_screen.dart';
 import 'widgets/ads_banner.dart';
 import 'widgets/attention_banner.dart';
+import 'widgets/prize_details_banner.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -191,7 +194,11 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
       children: [
         HomeHeader(
           walletBalance: '₹ 500',
-          onAddFunds: () {},
+          onAddFunds: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+            );
+          },
           onNotificationsTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
@@ -205,6 +212,14 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         const SizedBox(height: 18),
         const HomeSearchBar(),
         const SizedBox(height: 16),
+        PrizeDetailsBanner(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrizeDetailsScreen()),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
         AttentionBanner(
           onTap: () {
             Navigator.of(context).push(

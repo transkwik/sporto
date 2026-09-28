@@ -108,6 +108,12 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     subtitle: 'Upcoming, live & completed',
   ),
   ProfileMenuItem(
+    icon: Icons.emoji_events_outlined,
+    iconColor: AppColors.amberAccent,
+    label: 'All Tournaments',
+    subtitle: 'Browse every live, upcoming & completed cup',
+  ),
+  ProfileMenuItem(
     icon: Icons.favorite_rounded,
     iconColor: Color(0xFFE85A6B),
     label: 'My Sponsorships',
@@ -120,10 +126,22 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     subtitle: 'Payments, tips, refunds',
   ),
   ProfileMenuItem(
+    icon: Icons.volunteer_activism_rounded,
+    iconColor: AppColors.primary,
+    label: 'My Fan Tips',
+    subtitle: 'Sent, via team & individual',
+  ),
+  ProfileMenuItem(
     icon: Icons.military_tech_rounded,
     iconColor: AppColors.amberAccent,
     label: 'Achievements',
-    subtitle: '5 of 10 earned',
+    subtitle: '2 of 10 earned',
+  ),
+  ProfileMenuItem(
+    icon: Icons.workspace_premium_rounded,
+    iconColor: AppColors.amberAccent,
+    label: 'My Awards',
+    subtitle: 'Prize splits & individual awards',
   ),
   ProfileMenuItem(
     icon: Icons.notifications_rounded,
