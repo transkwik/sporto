@@ -10,11 +10,13 @@ class PlaygroundTeamCard extends StatelessWidget {
   const PlaygroundTeamCard({
     super.key,
     required this.team,
+    this.isPlayer = true,
     this.onJoin,
     this.onTap,
   });
 
   final Map<String, dynamic> team;
+  final bool isPlayer;
   final VoidCallback? onJoin;
   final VoidCallback? onTap;
 
@@ -241,9 +243,9 @@ class PlaygroundTeamCard extends StatelessWidget {
                           color: AppColors.amberAccent,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Join Team',
-                          style: TextStyle(
+                        child: Text(
+                          isPlayer ? 'Join Team' : 'Invite Player',
+                          style: const TextStyle(
                             color: Colors.black87,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,

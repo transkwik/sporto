@@ -135,6 +135,11 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     iconColor: Colors.white70,
     label: 'Settings',
   ),
+  ProfileMenuItem(
+    icon: Icons.logout_rounded,
+    iconColor: Color(0xFFE85A6B),
+    label: 'Logout',
+  ),
 ];
 
 const List<ProfileMenuItem> dummyProfileSupportMenu = [

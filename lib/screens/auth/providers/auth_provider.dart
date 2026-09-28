@@ -194,4 +194,27 @@ class AuthProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<bool> logout() async {
+    _setLoading(true);
+    clearMessages();
+    try {
+      final response = await UserApis().logout();
+      if (response != null && response['success'] == true) {
+        final storage = GetStorage();
+        await storage.remove('authToken');
+        _checkResponse = null;
+        _setLoading(false);
+        return true;
+      } else {
+        _errorMessage = response != null ? response['message'] : 'Failed to logout';
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An unexpected error occurred: $e';
+      _setLoading(false);
+      return false;
+    }
+  }
 }

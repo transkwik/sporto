@@ -80,6 +80,48 @@ class LiveMatchDetailInfo {
   final List<BowlerStat> bowlers;
   final String likeCount;
   final String fireCount;
+
+  LiveMatchDetailInfo copyWith({
+    String? tournamentName,
+    String? location,
+    String? roundLabel,
+    String? teamAName,
+    String? teamAInitials,
+    Color? teamAColor,
+    String? teamARole,
+    String? teamBName,
+    String? teamBRole,
+    String? battingScore,
+    String? overs,
+    String? currentRunRate,
+    String? currentBowler,
+    List<String>? thisOverBalls,
+    List<BatsmanStat>? batsmen,
+    List<BowlerStat>? bowlers,
+    String? likeCount,
+    String? fireCount,
+  }) {
+    return LiveMatchDetailInfo(
+      tournamentName: tournamentName ?? this.tournamentName,
+      location: location ?? this.location,
+      roundLabel: roundLabel ?? this.roundLabel,
+      teamAName: teamAName ?? this.teamAName,
+      teamAInitials: teamAInitials ?? this.teamAInitials,
+      teamAColor: teamAColor ?? this.teamAColor,
+      teamARole: teamARole ?? this.teamARole,
+      teamBName: teamBName ?? this.teamBName,
+      teamBRole: teamBRole ?? this.teamBRole,
+      battingScore: battingScore ?? this.battingScore,
+      overs: overs ?? this.overs,
+      currentRunRate: currentRunRate ?? this.currentRunRate,
+      currentBowler: currentBowler ?? this.currentBowler,
+      thisOverBalls: thisOverBalls ?? this.thisOverBalls,
+      batsmen: batsmen ?? this.batsmen,
+      bowlers: bowlers ?? this.bowlers,
+      likeCount: likeCount ?? this.likeCount,
+      fireCount: fireCount ?? this.fireCount,
+    );
+  }
 }
 
 const LiveMatchDetailInfo dummyLiveMatchDetail = LiveMatchDetailInfo(
@@ -98,11 +140,31 @@ const LiveMatchDetailInfo dummyLiveMatchDetail = LiveMatchDetailInfo(
   currentBowler: 'Amit Kumar',
   thisOverBalls: ['4', '1', '•', '•', '•', '•'],
   batsmen: [
-    BatsmanStat(name: 'Shrvn Prajapati', isCaptain: true, runs: 12, balls: 6, fours: 1, sixes: 1, strikeRate: '200.0'),
-    BatsmanStat(name: 'Amit Kumar', runs: 8, balls: 3, fours: 0, sixes: 1, strikeRate: '266.7'),
+    BatsmanStat(
+      name: 'Shrvn Prajapati',
+      isCaptain: true,
+      runs: 12,
+      balls: 6,
+      fours: 1,
+      sixes: 1,
+      strikeRate: '200.0',
+    ),
+    BatsmanStat(
+      name: 'Amit Kumar',
+      runs: 8,
+      balls: 3,
+      fours: 0,
+      sixes: 1,
+      strikeRate: '266.7',
+    ),
   ],
   bowlers: [
-    BowlerStat(name: 'Dev Kumar', wicketsRuns: '0-1', overs: '0.2', strikeRate: '7.50'),
+    BowlerStat(
+      name: 'Dev Kumar',
+      wicketsRuns: '0-1',
+      overs: '0.2',
+      strikeRate: '7.50',
+    ),
   ],
   likeCount: '1.2k',
   fireCount: '543',

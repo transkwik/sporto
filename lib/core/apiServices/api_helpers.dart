@@ -164,8 +164,12 @@ class ApiHelper {
         return {
           'session_expired': true,
           'message': 'Session expired',
-          'errorRes': json.decode(jsonResponse),
+          'errorRes': jsonResponse.isEmpty ? {} : json.decode(jsonResponse),
         };
+      }
+
+      if (jsonResponse.isEmpty) {
+        return {'success': true, 'message': 'Success'};
       }
 
       return json.decode(jsonResponse);

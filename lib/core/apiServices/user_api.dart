@@ -77,6 +77,12 @@ class UserApis {
     return response;
   }
 
+  getTeamDetails(int id) async {
+    var response = await ApiHelper().getTypeGet('teams/$id');
+    log(response.toString());
+    return response;
+  }
+
   createTeam(Map<String, dynamic> params) async {
     var response = await ApiHelper().getTypePostJson('teams', params);
     log(response.toString());
@@ -132,6 +138,41 @@ class UserApis {
     return response;
   }
 
+  inviteTeamPlayer(int teamId, Map<String, dynamic> params) async {
+    var response = await ApiHelper().getTypePostJson(
+      'teams/$teamId/invitations',
+      params,
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getInvitations(int page, int perPage, String search) async {
+    var response = await ApiHelper().getTypeGet(
+      'invitations?page=$page&per_page=$perPage&search=$search',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  acceptInvitation(int id) async {
+    var response = await ApiHelper().getTypePostJson(
+      'invitations/$id/accept',
+      {},
+    );
+    log(response.toString());
+    return response;
+  }
+
+  rejectInvitation(int id) async {
+    var response = await ApiHelper().getTypePostJson(
+      'invitations/$id/reject',
+      {},
+    );
+    log(response.toString());
+    return response;
+  }
+
   getTeamPlayers(int teamId) async {
     var response = await ApiHelper().getTypeGet('teams/$teamId/players');
     log(response.toString());
@@ -175,9 +216,9 @@ class UserApis {
     return response;
   }
 
-  getLiveMatches(dynamic sportId, int page, int perPage) async {
+  getLiveMatches(dynamic sportId, int page, int perPage, [String search = '']) async {
     var response = await ApiHelper().getTypeGet(
-      'matches/live?sport_id=$sportId&page=$page&per_page=$perPage',
+      'matches/live?sport_id=$sportId&search=$search&page=$page&per_page=$perPage',
     );
     log(response.toString());
     return response;
@@ -195,6 +236,20 @@ class UserApis {
     var response = await ApiHelper().getTypeGet(
       'matches?sport_id=$sportId&page=$page&per_page=$perPage',
     );
+    log(response.toString());
+    return response;
+  }
+
+  getLiveScore(int matchId) async {
+    var response = await ApiHelper().getTypeGet(
+      'matches/$matchId/score',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  logout() async {
+    var response = await ApiHelper().getTypePostJson('user/logout', {});
     log(response.toString());
     return response;
   }

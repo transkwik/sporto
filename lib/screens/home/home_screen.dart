@@ -171,7 +171,7 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
-    final userProfile = authProvider.checkResponse?['profile'] ?? {};
+    final userProfile = authProvider.checkResponse?['user']?['profile'] ?? {};
     
     final String userName = userProfile['full_name'] ?? 'Player';
     final String city = userProfile['city'] ?? '';
@@ -257,13 +257,37 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                       final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
                       final teamB = teams.length > 1 ? teams[1]['name'] : 'Team B';
 
+                      String scoreA = '0/0';
+                      String scoreB = '0/0';
+
+                      if (teams.isNotEmpty) {
+                        final t1Id = teams[0]['id']?.toString();
+                        final scoringData = matchData['scoring']?['score']?['teams'];
+                        
+                        if (scoringData != null && t1Id != null && scoringData[t1Id] != null) {
+                          final sc1 = scoringData[t1Id]['score']?.toString() ?? '0';
+                          final w1 = scoringData[t1Id]['wickets']?.toString();
+                          scoreA = w1 != null ? '$sc1/$w1' : sc1;
+                        }
+
+                        if (teams.length > 1) {
+                          final t2Id = teams[1]['id']?.toString();
+                          if (scoringData != null && t2Id != null && scoringData[t2Id] != null) {
+                            final sc2 = scoringData[t2Id]['score']?.toString() ?? '0';
+                            final w2 = scoringData[t2Id]['wickets']?.toString();
+                            scoreB = w2 != null ? '$sc2/$w2' : sc2;
+                          }
+                        }
+                      }
+
                       final matchInfo = MatchInfo(
+                        id: match['id'] as int? ?? 0,
                         sport: sportName,
                         title: title,
                         teamA: teamA,
                         teamB: teamB,
-                        scoreA: '0/0',
-                        scoreB: '0/0',
+                        scoreA: scoreA,
+                        scoreB: scoreB,
                         status: status,
                       );
 
@@ -272,10 +296,10 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                         child: LiveMatchSpotlightCard(
                           match: matchInfo,
                           onWatch: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
+                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: matchInfo.id)),
                           ),
                           onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail)),
+                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: matchInfo.id)),
                           ),
                         ),
                       );

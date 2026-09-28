@@ -28,7 +28,7 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final profile = authProvider.checkResponse?['profile'];
+    final profile = authProvider.checkResponse?['user']?['profile'];
     final userName = profile?['full_name'] ?? 'Guest';
     final greeting = _getGreeting();
 

@@ -2,6 +2,7 @@
 /// dashboard. No persistence/network layer — purely for UI presentation.
 class MatchInfo {
   const MatchInfo({
+    this.id = 0,
     required this.sport,
     required this.title,
     required this.teamA,
@@ -11,6 +12,7 @@ class MatchInfo {
     required this.status,
   });
 
+  final int id;
   final String sport;
   final String title;
   final String teamA;
@@ -18,9 +20,23 @@ class MatchInfo {
   final String scoreA;
   final String scoreB;
   final String status;
+
+  factory MatchInfo.fromJson(Map<String, dynamic> json) {
+    return MatchInfo(
+      id: json['id'] as int? ?? 0,
+      sport: json['sport']?['name']?.toString() ?? json['sport_name']?.toString() ?? 'Unknown',
+      title: json['tournament']?['name']?.toString() ?? json['title']?.toString() ?? 'Friendly Match',
+      teamA: json['team_a']?['name']?.toString() ?? 'Team A',
+      teamB: json['team_b']?['name']?.toString() ?? 'Team B',
+      scoreA: json['score_a']?.toString() ?? '-',
+      scoreB: json['score_b']?.toString() ?? '-',
+      status: json['status']?.toString() ?? 'Live',
+    );
+  }
 }
 
 const MatchInfo dummyLiveMatch = MatchInfo(
+  id: 3665,
   sport: 'Cricket',
   title: 'Jaipur Super Over',
   teamA: 'Thunder Titans',

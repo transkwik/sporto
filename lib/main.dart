@@ -16,7 +16,7 @@ import 'package:get_storage/get_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
-  
+
   runApp(
     MultiProvider(
       providers: [
@@ -39,7 +39,7 @@ class SportoApp extends StatelessWidget {
     return Sizer(
       builder: (context, orientation, screenType) {
         return GetMaterialApp(
-          title: 'Sporto',
+          title: 'Spoto',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           initialRoute: AppRoutes.splash,

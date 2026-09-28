@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/profile_info.dart';
 import '../../routes/app_routes.dart';
+import '../auth/providers/auth_provider.dart';
 import 'profile_details_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
@@ -23,13 +25,13 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedSport = 0;
 
-  void _openDetails() {
+  void _openDetails(ProfileInfo profile) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProfileDetailsScreen()),
+      MaterialPageRoute(builder: (_) => ProfileDetailsScreen(profile: profile)),
     );
   }
 
-  void _onMainMenuTap(ProfileMenuItem item) {
+  Future<void> _onMainMenuTap(ProfileMenuItem item) async {
     switch (item.label) {
       case 'My Sports':
         Navigator.of(context).pushNamed(AppRoutes.mySports);
@@ -38,22 +40,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'My Tournaments':
         Navigator.of(context).pushNamed(AppRoutes.myTournaments);
       case 'Notifications':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
       case 'Settings':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+      case 'Logout':
+        final provider = context.read<AuthProvider>();
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const Center(child: CircularProgressIndicator()),
         );
+        
+        final success = await provider.logout();
+        
+        if (!mounted) return;
+        Navigator.of(context).pop(); // remove dialog
+        
+        if (success) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.login,
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(provider.errorMessage ?? 'Logout failed')),
+          );
+        }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final userMap =
+        authProvider.checkResponse?['user'] as Map<String, dynamic>?;
+    final profileMap =
+        userMap?['profile'] as Map<String, dynamic>?;
+
+    final String fullName = profileMap?['full_name'] ?? 'Unknown User';
+    final String userId = userMap?['id']?.toString() ?? 'N/A';
+    final String spotoId =
+        profileMap?['id']?.toString() ??
+        'N/A'; // Or a custom ID logic if needed
+    final String phone = userMap?['mobile_number'] ?? 'N/A';
+
+    final String city = profileMap?['city'] ?? '';
+    final String state = profileMap?['state'] ?? '';
+    final String location = (city.isNotEmpty && state.isNotEmpty)
+        ? '$city, $state'
+        : (city.isNotEmpty ? city : state);
+
+    final dynamicProfile = ProfileInfo(
+      name: fullName,
+      userId: 'SP-$userId',
+      spotoId: 'SPOTO-$spotoId',
+      phone: phone,
+      location: location.isEmpty ? 'Unknown Location' : location,
+    );
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
-        ProfileHeader(profile: dummyProfile, onTap: _openDetails),
+        ProfileHeader(
+          profile: dynamicProfile,
+          onTap: () => _openDetails(dynamicProfile),
+        ),
         const SizedBox(height: 18),
         ProfileSportChips(
           sports: dummyProfileSports,
@@ -70,7 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 10),
         ],
         const SizedBox(height: 8),
-        for (final item in dummyProfileSupportMenu) ProfileSupportLink(item: item, onTap: () {}),
+        for (final item in dummyProfileSupportMenu)
+          ProfileSupportLink(item: item, onTap: () {}),
       ],
     );
   }

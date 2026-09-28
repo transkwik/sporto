@@ -44,26 +44,32 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
       if (response != null && response['success'] == true) {
         final List<dynamic> data = response['data'] ?? [];
         setState(() {
-          _players = data.map((p) {
-            String name = p['player_name'] ?? '';
-            String phone = p['mobile_number'] ?? '';
-            
-            if (p['user'] != null) {
-              if (name == 'Captain' || name.isEmpty) {
-                name = p['user']['profile']?['full_name'] ?? p['user']['name'] ?? name;
-              }
-              if (phone.isEmpty) {
-                phone = p['user']['mobile_number'] ?? '';
-              }
-            }
+          _players = data
+              .where((p) => p['status'] == 1 && p['removed_at'] == null && !(p['joined_at'] == null && p['accepted_at'] == null && p['rejected_at'] == null))
+              .map((p) {
+                String name = p['player_name'] ?? '';
+                String phone = p['mobile_number'] ?? '';
 
-            return TeamPlayerInfo(
-              id: p['id'],
-              name: name.isEmpty ? 'Unknown' : name,
-              phone: phone,
-              isCaptain: p['is_captain'] == 1 || p['is_captain'] == true,
-            );
-          }).toList();
+                if (p['user'] != null) {
+                  if (name == 'Captain' || name.isEmpty) {
+                    name =
+                        p['user']['profile']?['full_name'] ??
+                        p['user']['name'] ??
+                        name;
+                  }
+                  if (phone.isEmpty) {
+                    phone = p['user']['mobile_number'] ?? '';
+                  }
+                }
+
+                return TeamPlayerInfo(
+                  id: p['user_id'] ?? p['id'],
+                  name: name.isEmpty ? 'Unknown' : name,
+                  phone: phone,
+                  isCaptain: p['is_captain'] == 1 || p['is_captain'] == true,
+                );
+              })
+              .toList();
 
           // Ensure the captain is always Player 1 (index 0)
           _players.sort((a, b) {
@@ -85,7 +91,11 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
   }
 
   void _addPlayer() {
-    final int maxPlayers = int.tryParse(widget.team['sport']?['max_players']?.toString() ?? '11') ?? 11;
+    final int maxPlayers =
+        int.tryParse(
+          widget.team['sport']?['max_players']?.toString() ?? '11',
+        ) ??
+        11;
     if (_players.length >= maxPlayers) return;
 
     showModalBottomSheet<void>(
@@ -106,10 +116,10 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await UserApis().addTeamPlayer(teamId, {
-        "player_name": name,
+      final response = await UserApis().inviteTeamPlayer(teamId, {
         "mobile_number": phone,
         "country_code": "+91",
+        "name": name, // passing just in case backend uses it for unregistered
       });
 
       if (response != null && response['success'] == true) {
@@ -141,7 +151,12 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
     final teamId = widget.team['id'] as int?;
     if (teamId == null) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _players.removeWhere((p) => p.id == playerId);
+      widget.team['total_players'] = _players.length;
+      widget.team['player_count'] = _players.length;
+    });
     try {
       final response = await UserApis().removeTeamPlayer(teamId, playerId);
       if (response != null && response['success'] == true) {
@@ -170,20 +185,31 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> gameRules = List<dynamic>.from(widget.tournament['game_rules'] ?? []);
-    final List<dynamic> sportRules = List<dynamic>.from(widget.tournament['sport_rules'] ?? []);
+    final List<dynamic> gameRules = List<dynamic>.from(
+      widget.tournament['game_rules'] ?? [],
+    );
+    final List<dynamic> sportRules = List<dynamic>.from(
+      widget.tournament['sport_rules'] ?? [],
+    );
     final List<dynamic> allRules = [...gameRules, ...sportRules];
 
     int requiredPlayers = 11;
     for (final dynamic rule in allRules) {
-      if (rule is Map && rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
+      if (rule is Map &&
+          rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
         final overrideVal = rule['override_value']?.toString();
         final defaultVal = rule['default_value']?.toString();
-        
-        if (overrideVal != null && overrideVal.trim().isNotEmpty && overrideVal != '0' && overrideVal != '0.0') {
+
+        if (overrideVal != null &&
+            overrideVal.trim().isNotEmpty &&
+            overrideVal != '0' &&
+            overrideVal != '0.0') {
           requiredPlayers = double.tryParse(overrideVal)?.toInt() ?? 11;
           break;
-        } else if (defaultVal != null && defaultVal.trim().isNotEmpty && defaultVal != '0' && defaultVal != '0.0') {
+        } else if (defaultVal != null &&
+            defaultVal.trim().isNotEmpty &&
+            defaultVal != '0' &&
+            defaultVal != '0.0') {
           requiredPlayers = double.tryParse(defaultVal)?.toInt() ?? 11;
           break;
         }
@@ -197,7 +223,9 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -209,7 +237,11 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                     const SizedBox(width: 14),
                     Text(
                       'Add Team Players',
-                      style: GoogleFonts.quicksand(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -218,45 +250,78 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                   children: [
-                    TeamRosterCard(team: widget.team, requiredPlayers: requiredPlayers),
+                    TeamRosterCard(
+                      team: widget.team,
+                      requiredPlayers: requiredPlayers,
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       'Team Players',
-                      style: GoogleFonts.quicksand(color: Colors.white60, fontSize: 13.5, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white60,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     if (_isFetching && _players.isEmpty)
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(color: AppColors.primaryLight),
-                      ))
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryLight,
+                          ),
+                        ),
+                      )
                     else if (_players.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
                           'No players found.',
-                          style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13),
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white38,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     for (var i = 0; i < _players.length; i++) ...[
                       Row(
                         children: [
                           Text(
-                            _players[i].isCaptain ? 'Player ${i + 1} Captain' : 'Player ${i + 1}',
-                            style: const TextStyle(color: Colors.white60, fontSize: 13.5, fontWeight: FontWeight.w500),
+                            _players[i].isCaptain
+                                ? 'Player ${i + 1} Captain'
+                                : 'Player ${i + 1}',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           if (_players[i].isCaptain) ...[
                             const SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.mintGreen.withValues(alpha: 0.16),
+                                color: AppColors.mintGreen.withValues(
+                                  alpha: 0.16,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.4)),
+                                border: Border.all(
+                                  color: AppColors.mintGreen.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
                               ),
                               child: Text(
                                 'Active',
-                                style: GoogleFonts.quicksand(color: AppColors.mintGreen, fontSize: 11, fontWeight: FontWeight.w700),
+                                style: GoogleFonts.quicksand(
+                                  color: AppColors.mintGreen,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -265,8 +330,10 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                       const SizedBox(height: 10),
                       PlayerEntryCard(
                         player: _players[i],
-                        onEdit: () {}, 
-                        onRemove: _players[i].isCaptain ? null : () => _removePlayer(_players[i].id),
+                        onEdit: () {},
+                        onRemove: _players[i].isCaptain
+                            ? null
+                            : () => _removePlayer(_players[i].id),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -274,18 +341,31 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                       children: [
                         Text(
                           '$totalCount/$requiredPlayers Players',
-                          style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const Spacer(),
                         if (!isFull)
                           GestureDetector(
                             onTap: _isLoading ? null : _addPlayer,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.6)),
+                                border: Border.all(
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -294,14 +374,25 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                                     const SizedBox(
                                       width: 12,
                                       height: 12,
-                                      child: CircularProgressIndicator(color: AppColors.primaryLight, strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.primaryLight,
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   else
-                                    Icon(Icons.add_rounded, color: AppColors.primaryLight, size: 16),
+                                    Icon(
+                                      Icons.add_rounded,
+                                      color: AppColors.primaryLight,
+                                      size: 16,
+                                    ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Add New Player',
-                                    style: GoogleFonts.quicksand(color: AppColors.primaryLight, fontSize: 12.5, fontWeight: FontWeight.w700),
+                                    style: GoogleFonts.quicksand(
+                                      color: AppColors.primaryLight,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),

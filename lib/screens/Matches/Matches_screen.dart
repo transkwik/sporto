@@ -82,10 +82,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-  void _openMatchDetail(BuildContext context) {
+  void _openMatchDetail(BuildContext context, Map<String, dynamic> matchData) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail),
+        builder: (_) => LiveMatchDetailScreen(
+          match: dummyLiveMatchDetail,
+          matchId: matchData['id'] as int? ?? 3665,
+        ),
       ),
     );
   }
@@ -112,14 +115,39 @@ class _MatchesScreenState extends State<MatchesScreen> {
     final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
     final teamB = teams.length > 1 ? teams[1]['name'] : 'Team B';
 
-    final scoreA = match?['score_a']?.toString() ??
-        match?['scoreA']?.toString() ??
-        (teams.isNotEmpty ? teams[0]['score']?.toString() : null) ??
-        '0/0';
-    final scoreB = match?['score_b']?.toString() ??
-        match?['scoreB']?.toString() ??
-        (teams.length > 1 ? teams[1]['score']?.toString() : null) ??
-        '0/0';
+    String scoreA = '0/0';
+    String scoreB = '0/0';
+
+    if (teams.isNotEmpty) {
+      final t1Id = teams[0]['id']?.toString();
+      final scoringData = matchData['scoring']?['score']?['teams'];
+      
+      if (scoringData != null && t1Id != null && scoringData[t1Id] != null) {
+        final sc1 = scoringData[t1Id]['score']?.toString() ?? '0';
+        final w1 = scoringData[t1Id]['wickets']?.toString();
+        scoreA = w1 != null ? '$sc1/$w1' : sc1;
+      } else {
+        // Fallback for older formats or missing scoring logic
+        scoreA = match?['score_a']?.toString() ??
+            match?['scoreA']?.toString() ??
+            teams[0]['score']?.toString() ??
+            '0/0';
+      }
+
+      if (teams.length > 1) {
+        final t2Id = teams[1]['id']?.toString();
+        if (scoringData != null && t2Id != null && scoringData[t2Id] != null) {
+          final sc2 = scoringData[t2Id]['score']?.toString() ?? '0';
+          final w2 = scoringData[t2Id]['wickets']?.toString();
+          scoreB = w2 != null ? '$sc2/$w2' : sc2;
+        } else {
+          scoreB = match?['score_b']?.toString() ??
+              match?['scoreB']?.toString() ??
+              teams[1]['score']?.toString() ??
+              '0/0';
+        }
+      }
+    }
 
     final matchInfo = MatchInfo(
       sport: sportName,
@@ -168,10 +196,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
       prizeLabel: prize,
       onTap: () => kind == MatchFeedKind.completed
           ? _openCompletedDetail(matchData)
-          : _openMatchDetail(context),
+          : _openMatchDetail(context, matchData),
       onCta: () => kind == MatchFeedKind.completed
           ? _openCompletedDetail(matchData)
-          : _openMatchDetail(context),
+          : _openMatchDetail(context, matchData),
     );
   }
 

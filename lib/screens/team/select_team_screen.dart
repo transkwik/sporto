@@ -41,18 +41,36 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.authBackgroundBottom,
-        title: Text('Delete Team', style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete this team?', style: GoogleFonts.quicksand(color: Colors.white70)),
+        title: Text(
+          'Delete Team',
+          style: GoogleFonts.quicksand(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete this team?',
+          style: GoogleFonts.quicksand(color: Colors.white70),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.glassBorder),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: GoogleFonts.quicksand(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.quicksand(color: Colors.white54),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final provider = Provider.of<HomeProvider>(context, listen: false);
+              final provider = Provider.of<HomeProvider>(
+                context,
+                listen: false,
+              );
               final success = await provider.deleteTeam(team['id']);
               if (mounted) {
                 if (success) {
@@ -66,11 +84,20 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                     setState(() => _selectedIndex = 0);
                   }
                 } else {
-                  MCP.showMessage(context, provider.errorMessage ?? "Failed to delete team.");
+                  MCP.showMessage(
+                    context,
+                    provider.errorMessage ?? "Failed to delete team.",
+                  );
                 }
               }
             },
-            child: Text('Delete', style: GoogleFonts.quicksand(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.quicksand(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -167,27 +194,48 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                           ...teams.asMap().entries.map((entry) {
                             final i = entry.key;
                             final team = entry.value;
-                            final List<dynamic> gameRules = List<dynamic>.from(widget.tournament['game_rules'] ?? []);
-                            final List<dynamic> sportRules = List<dynamic>.from(widget.tournament['sport_rules'] ?? []);
-                            final List<dynamic> allRules = [...gameRules, ...sportRules];
+                            final List<dynamic> gameRules = List<dynamic>.from(
+                              widget.tournament['game_rules'] ?? [],
+                            );
+                            final List<dynamic> sportRules = List<dynamic>.from(
+                              widget.tournament['sport_rules'] ?? [],
+                            );
+                            final List<dynamic> allRules = [
+                              ...gameRules,
+                              ...sportRules,
+                            ];
 
                             int requiredPlayers = 11;
                             for (final dynamic rule in allRules) {
-                              if (rule is Map && rule['key']?.toString().toLowerCase() == 'minimum_players_per_team') {
-                                final overrideVal = rule['override_value']?.toString();
-                                final defaultVal = rule['default_value']?.toString();
-                                
-                                if (overrideVal != null && overrideVal.trim().isNotEmpty && overrideVal != '0' && overrideVal != '0.0') {
-                                  requiredPlayers = double.tryParse(overrideVal)?.toInt() ?? 11;
+                              if (rule is Map &&
+                                  rule['key']?.toString().toLowerCase() ==
+                                      'minimum_players_per_team') {
+                                final overrideVal = rule['override_value']
+                                    ?.toString();
+                                final defaultVal = rule['default_value']
+                                    ?.toString();
+
+                                if (overrideVal != null &&
+                                    overrideVal.trim().isNotEmpty &&
+                                    overrideVal != '0' &&
+                                    overrideVal != '0.0') {
+                                  requiredPlayers =
+                                      double.tryParse(overrideVal)?.toInt() ??
+                                      11;
                                   break;
-                                } else if (defaultVal != null && defaultVal.trim().isNotEmpty && defaultVal != '0' && defaultVal != '0.0') {
-                                  requiredPlayers = double.tryParse(defaultVal)?.toInt() ?? 11;
+                                } else if (defaultVal != null &&
+                                    defaultVal.trim().isNotEmpty &&
+                                    defaultVal != '0' &&
+                                    defaultVal != '0.0') {
+                                  requiredPlayers =
+                                      double.tryParse(defaultVal)?.toInt() ??
+                                      11;
                                   break;
                                 }
                               }
                             }
                             if (requiredPlayers == 0) requiredPlayers = 11;
-                            
+
                             return TeamCard(
                               team: team,
                               selected: _selectedIndex == i,
@@ -220,16 +268,18 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                     final teams = provider.teamsList;
                     final bool hasTeams = teams.isNotEmpty;
                     return GestureDetector(
-                      onTap: !hasTeams ? null : () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => PaymentMethodScreen(
-                              tournament: widget.tournament,
-                              team: teams[_selectedIndex],
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: !hasTeams
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PaymentMethodScreen(
+                                    tournament: widget.tournament,
+                                    team: teams[_selectedIndex],
+                                  ),
+                                ),
+                              );
+                            },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         width: double.infinity,
@@ -239,16 +289,20 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                           gradient: hasTeams ? AppColors.bannerGradient : null,
                           color: hasTeams ? null : AppColors.glassFillLighter,
                           borderRadius: BorderRadius.circular(16),
-                          border: hasTeams ? null : Border.all(color: AppColors.glassBorder),
-                          boxShadow: hasTeams ? [
-                            BoxShadow(
-                              color: const Color(
-                                0xFFFF7A1E,
-                              ).withValues(alpha: 0.45),
-                              blurRadius: 22,
-                              offset: const Offset(0, 10),
-                            ),
-                          ] : null,
+                          border: hasTeams
+                              ? null
+                              : Border.all(color: AppColors.glassBorder),
+                          boxShadow: hasTeams
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFFF7A1E,
+                                    ).withValues(alpha: 0.45),
+                                    blurRadius: 22,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

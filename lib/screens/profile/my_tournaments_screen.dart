@@ -45,7 +45,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
     if (tournament.status == MyTournamentStatus.live) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail),
+          builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: 3665),
         ),
       );
       return;

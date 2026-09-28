@@ -39,10 +39,12 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
     super.initState();
     _searchController.addListener(() => setState(() {}));
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<HomeProvider>();
-      provider.fetchSports();
-      if (!provider.isFetchingAvailableTeams && provider.availableTeamsList.isEmpty) {
+      await provider.fetchSports();
+      if (!mounted) return;
+      if (!provider.isFetchingAvailableTeams &&
+          provider.availableTeamsList.isEmpty) {
         _fetchAvailableTeams(isRefresh: true);
       }
     });
@@ -56,9 +58,11 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       final provider = context.read<HomeProvider>();
-      if (!provider.isFetchingAvailableTeams && !provider.isFetchingMoreAvailableTeams) {
+      if (!provider.isFetchingAvailableTeams &&
+          !provider.isFetchingMoreAvailableTeams) {
         _fetchAvailableTeams(isRefresh: false);
       }
     }
@@ -81,6 +85,7 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
       sportId: sportId,
       latitude: locProvider.latitude != 0.0 ? locProvider.latitude : null,
       longitude: locProvider.longitude != 0.0 ? locProvider.longitude : null,
+      role: _roles[_roleIndex],
     );
   }
 
@@ -91,15 +96,16 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
       final name = '${team['team_name'] ?? team['name'] ?? ''}'.toLowerCase();
       final sportName = '${team['sport']?['name'] ?? ''}'.toLowerCase();
       final matchesSport = sportName.isEmpty || sportName == sport;
-      final matchesQuery = query.isEmpty || name.contains(query) || sportName.contains(query);
+      final matchesQuery =
+          query.isEmpty || name.contains(query) || sportName.contains(query);
       return matchesSport && matchesQuery;
     }).toList();
   }
 
   void _openTeamDetail(Map<String, dynamic> team) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => TeamDetailScreen(team: team)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => TeamDetailScreen(team: team)));
   }
 
   Future<void> _joinTeam(Map<String, dynamic> team) async {
@@ -110,7 +116,9 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.mintGreen),
+      ),
     );
 
     final response = await provider.joinTeamRequest(teamId);
@@ -145,7 +153,9 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -163,6 +173,15 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+                      onPressed: () {
+                        if (!isLoading) {
+                          _fetchAvailableTeams(isRefresh: true);
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -173,7 +192,8 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
                   children: [
                     ReadyToPlayBanner(
                       enabled: _readyToPlay,
-                      onChanged: (value) => setState(() => _readyToPlay = value),
+                      onChanged: (value) =>
+                          setState(() => _readyToPlay = value),
                     ),
                     const SizedBox(height: 14),
                     LimeSportChips(
@@ -192,11 +212,18 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, color: Colors.white54, size: 16),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: Colors.white54,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           city,
-                          style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white70,
+                            fontSize: 13.5,
+                          ),
                         ),
                       ],
                     ),
@@ -212,7 +239,11 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
                     if (isLoading)
                       const Padding(
                         padding: EdgeInsets.only(top: 40),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.mintGreen,
+                          ),
+                        ),
                       )
                     else if (teams.isEmpty)
                       Padding(
@@ -220,20 +251,28 @@ class _JoinTeamListScreenState extends State<JoinTeamListScreen> {
                         child: Text(
                           'No teams found.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13.5),
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white38,
+                            fontSize: 13.5,
+                          ),
                         ),
                       )
                     else
                       for (final team in teams)
                         PlaygroundTeamCard(
                           team: team,
+                          isPlayer: _isPlayer,
                           onTap: () => _openTeamDetail(team),
                           onJoin: () => _joinTeam(team),
                         ),
                     if (homeProvider.isFetchingMoreAvailableTeams)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.mintGreen,
+                          ),
+                        ),
                       ),
                   ],
                 ),

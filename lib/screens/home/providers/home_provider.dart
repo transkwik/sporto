@@ -319,6 +319,7 @@ class HomeProvider extends ChangeNotifier {
     int? sportId,
     double? latitude,
     double? longitude,
+    String? role,
   }) async {
     if (isRefresh) {
       _currentAvailableTeamsPage = 1;
@@ -340,11 +341,13 @@ class HomeProvider extends ChangeNotifier {
       };
 
       if (sportId != null) params['sport_id'] = sportId;
-      if (latitude != null) params['latitude'] = '';
-      // latitude;
-      if (longitude != null) params['longitude'] = '';
-      // longitude;
-      params['radius_km'] = '';
+      if (latitude != null) params['latitude'] = latitude;
+      if (longitude != null) params['longitude'] = longitude;
+      params['radius_km'] = 10;
+      if (role != null && role.isNotEmpty && role != 'All') {
+        params['player_role'] = role.toUpperCase().replaceAll(' ', '_'); 
+        // e.g. "Batter" -> "BATTER", "All Rounder" -> "ALL_ROUNDER"
+      }
 
       final response = await UserApis().getAvailableTeams(params);
 
@@ -357,6 +360,9 @@ class HomeProvider extends ChangeNotifier {
           List<dynamic> newData = [];
           if (data is List) {
             newData = data;
+            if (response.containsKey('meta') && response['meta'] is Map) {
+              _lastAvailableTeamsPage = response['meta']['last_page'] ?? 1;
+            }
           } else if (data is Map && data.containsKey('data')) {
             newData = data['data'] ?? [];
             _lastAvailableTeamsPage = data['last_page'] ?? 1;
@@ -505,7 +511,7 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchLiveMatches(dynamic sportId, {bool isRefresh = false}) async {
+  Future<void> fetchLiveMatches(dynamic sportId, {bool isRefresh = false, String search = ''}) async {
     if (isRefresh) {
       _currentLiveMatchesPage = 1;
       _setFetchingLiveMatches(true);
@@ -519,7 +525,7 @@ class HomeProvider extends ChangeNotifier {
     clearMessages();
 
     try {
-      final response = await UserApis().getLiveMatches(sportId, _currentLiveMatchesPage, 20);
+      final response = await UserApis().getLiveMatches(sportId, _currentLiveMatchesPage, 20, search);
 
       if (response != null && response['error'] != null) {
         _errorMessage = response['error'];
@@ -685,5 +691,17 @@ class HomeProvider extends ChangeNotifier {
         _setFetchingMoreAllMatches(false);
       }
     }
+  }
+
+  Future<Map<String, dynamic>?> fetchLiveScore(int matchId) async {
+    try {
+      final response = await UserApis().getLiveScore(matchId);
+      if (response != null && response['success'] == true) {
+        return response; // Return the full response so we can use response['data']
+      }
+    } catch (e) {
+      debugPrint('Error fetching live score in provider: $e');
+    }
+    return null;
   }
 }

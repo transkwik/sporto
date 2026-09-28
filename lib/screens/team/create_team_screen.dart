@@ -5,7 +5,9 @@ import '../../core/apiServices/user_api.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/globalefunction/global_functions.dart';
 import '../../core/widgets/glass_back_button.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/team_player_info.dart';
+import '../auth/providers/auth_provider.dart';
 import '../home/providers/home_provider.dart';
 import '../onboarding/widgets/profile_photo_picker.dart';
 import '../onboarding/widgets/profile_text_field.dart';
@@ -14,10 +16,7 @@ import 'widgets/add_player_sheet.dart';
 import 'widgets/player_entry_card.dart';
 import 'widgets/remove_player_dialog.dart';
 
-const int _kMaxPlayers = 5;
-
-/// Form for building out a team's squad: name, logo, and up to five
-/// players (the first being the captain), matching the "Create New Team"
+/// Form for building out a team's squad: name, logo, and players
 /// reference design.
 class CreateTeamScreen extends StatefulWidget {
   const CreateTeamScreen({super.key, this.initialTeamName});
@@ -30,30 +29,107 @@ class CreateTeamScreen extends StatefulWidget {
 
 class _CreateTeamScreenState extends State<CreateTeamScreen> {
   late final TextEditingController _teamNameController = TextEditingController(
-    text: widget.initialTeamName ?? 'Thunder Titans',
+    text: widget.initialTeamName ?? '',
   );
   late final TextEditingController _cityController = TextEditingController();
-  bool _hasPhoto = false;
 
-  final List<TeamPlayerInfo> _players = const [
-    TeamPlayerInfo(
-      name: 'Amit Kumar',
-      phone: '+91 9008007006',
-      isCaptain: true,
-    ),
-  ].toList();
+  final List<TeamPlayerInfo> _players = [];
+  
+  List<dynamic> _sports = [];
+  bool _isLoadingSports = true;
+  dynamic _selectedSport;
+
+  int? _createdTeamId;
+
+  String? _uploadedLogoUrl;
+  String? _uploadedLogoPath;
+  bool _isUploadingLogo = false;
 
   @override
   void initState() {
     super.initState();
     _teamNameController.addListener(_handleTeamNameChanged);
     _cityController.addListener(_handleTeamNameChanged);
+    
+    // Add logged-in user as captain by default
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final userMap = authProvider.checkResponse?['user'] as Map<String, dynamic>?;
+      final profileMap = userMap?['profile'] as Map<String, dynamic>?;
+      
+      final fullName = profileMap?['full_name'] ?? userMap?['name'] ?? 'Captain';
+      final phone = userMap?['mobile_number'] ?? '';
+      
+      setState(() {
+        _players.add(
+          TeamPlayerInfo(
+            name: fullName,
+            phone: phone,
+            isCaptain: true,
+          ),
+        );
+      });
+    });
+
+    _fetchSports();
+  }
+
+  Future<void> _fetchSports() async {
+    try {
+      final res = await UserApis().getSports();
+      if (res != null && res['success'] == true && res['data'] is List) {
+        if (mounted) {
+          setState(() {
+            _sports = res['data'];
+            _isLoadingSports = false;
+            if (_sports.isNotEmpty) {
+              _selectedSport = _sports.first; // Default select first
+            }
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoadingSports = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingSports = false);
+    }
+  }
+
+  Future<void> _pickAndUploadLogo() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 60,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
+
+    if (pickedFile != null) {
+      setState(() => _isUploadingLogo = true);
+      try {
+        final res = await UserApis().uploadProfileImage(pickedFile.path);
+        if (res != null && res['success'] == true) {
+          setState(() {
+            _uploadedLogoUrl = res['data']['url'];
+            _uploadedLogoPath = res['data']['path'];
+            _isUploadingLogo = false;
+          });
+        } else {
+          setState(() => _isUploadingLogo = false);
+          if (mounted) {
+            MCP.showMessage(context, res?['message'] ?? 'Failed to upload logo');
+          }
+        }
+      } catch (e) {
+        setState(() => _isUploadingLogo = false);
+        if (mounted) MCP.showMessage(context, 'Error uploading logo');
+      }
+    }
   }
 
   void _handleTeamNameChanged() => setState(() {});
 
   void _addPlayer() {
-    if (_players.length >= _kMaxPlayers) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -61,10 +137,34 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.72),
       builder: (_) => AddPlayerSheet(
         playerNumber: _players.length + 1,
-        onSend: (name, phone) {
-          setState(
-            () => _players.add(TeamPlayerInfo(name: name, phone: phone)),
+        onSend: (name, phone) async {
+          if (_createdTeamId == null) return;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
           );
+          try {
+            final res = await UserApis().inviteTeamPlayer(_createdTeamId!, {
+              "name": name,
+              "mobile_number": phone,
+              "country_code": "+91",
+            });
+            if (mounted) Navigator.pop(context); // close loader
+            if (res != null && res['success'] == true) {
+              setState(() => _players.add(TeamPlayerInfo(name: name, phone: phone)));
+              if (mounted) {
+                MCP.showMessage(context, "Player added!", backgroundColor: Colors.green.shade600);
+              }
+            } else {
+              if (mounted) MCP.showMessage(context, res?['message'] ?? "Failed to add player");
+            }
+          } catch (e) {
+            if (mounted) {
+              Navigator.pop(context); // close loader
+              MCP.showMessage(context, "Failed to add player");
+            }
+          }
         },
       ),
     );
@@ -106,10 +206,27 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       playerName: player.name,
       teamName: teamName,
     );
-    if (confirmed) setState(() => _players.removeAt(index));
+    if (confirmed && _createdTeamId != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+      );
+      try {
+        // If we don't have the player's DB ID, we might have to fetch team players or optimism delete.
+        // For now, optimism delete if they don't have an ID, or just remove from list.
+        setState(() => _players.removeAt(index));
+        if (mounted) {
+          Navigator.pop(context); // close loader
+          MCP.showMessage(context, "Player removed", backgroundColor: Colors.green.shade600);
+        }
+      } catch (e) {
+        if (mounted) Navigator.pop(context);
+      }
+    }
   }
 
-  Future<void> _handleSaveTeam() async {
+  Future<void> _handleCreateTeam() async {
     if (!_isTeamReady) return;
 
     final provider = Provider.of<HomeProvider>(context, listen: false);
@@ -123,10 +240,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     );
 
     final params = {
-      "sport_id": 1, // Defaulting to 1
+      "sport_id": _selectedSport?['id'] ?? 1,
       "team_name": _teamNameController.text.trim(),
-      "city": _cityController.text.trim(),
       "visibility": 1,
+      if (_uploadedLogoPath != null) "team_logo_path": _uploadedLogoPath,
     };
 
     final response = await provider.createTeam(params);
@@ -143,44 +260,32 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       return;
     }
 
-    // Now add all players (including captain if they are in the list)
-    for (final player in _players) {
-      try {
-        await UserApis().addTeamPlayer(teamId, {
-          "player_name": player.name,
-          "mobile_number": player.phone,
-          "country_code": "+91", // defaulting country code
-        });
-      } catch (e) {
-        debugPrint('Failed to add player: ${player.name}');
-      }
-    }
-
     if (mounted) {
       Navigator.pop(context); // Close dialog
+      setState(() {
+        _createdTeamId = teamId;
+      });
       MCP.showMessage(
         context,
-        "Team created successfully!",
+        "Team created successfully! Now add players.",
         backgroundColor: Colors.green.shade600,
         icon: Icons.check_circle_rounded,
-      );
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => TeamCreatedScreen(players: _players)),
       );
     }
   }
 
-  bool get _isTeamReady =>
-      _players.length == _kMaxPlayers &&
-      _teamNameController.text.trim().isNotEmpty &&
-      _cityController.text.trim().isNotEmpty;
+  void _finishFlow() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => TeamCreatedScreen(players: _players)),
+    );
+  }
+
+  bool get _isTeamReady => _teamNameController.text.trim().isNotEmpty;
 
   @override
   void dispose() {
     _teamNameController.removeListener(_handleTeamNameChanged);
     _teamNameController.dispose();
-    _cityController.removeListener(_handleTeamNameChanged);
-    _cityController.dispose();
     super.dispose();
   }
 
@@ -216,20 +321,12 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                   children: [
+                    const SizedBox(height: 18),
                     Text(
-                      '$_kMaxPlayers Players Per Team',
-                      style: GoogleFonts.quicksand(
-                        color: AppColors.mintGreen,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Build your team Play together.',
+                      'Build your team. Play together.',
                       style: GoogleFonts.quicksand(
                         color: Colors.white54,
-                        fontSize: 13.5,
+                        fontSize: 14.5,
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -237,13 +334,68 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                       label: 'Team Name',
                       hint: 'Enter your team name',
                       controller: _teamNameController,
+                      readOnly: _createdTeamId != null,
                     ),
-                    // const SizedBox(height: 18),
-                    // ProfileTextField(
-                    //   label: 'City',
-                    //   hint: 'Enter your city',
-                    //   controller: _cityController,
-                    // ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Select Sport',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white60,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _isLoadingSports
+                        ? Container(
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.glassFillLighter,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.glassBorder),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryLight,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            height: 52,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.glassFillLighter,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.glassBorder),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<dynamic>(
+                                value: _selectedSport,
+                                dropdownColor: const Color(0xFF1C1C1E),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Colors.white60,
+                                ),
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                isExpanded: true,
+                                items: _sports.map((sport) {
+                                  return DropdownMenuItem<dynamic>(
+                                    value: sport,
+                                    child: Text(sport['name'] ?? ''),
+                                  );
+                                }).toList(),
+                                onChanged: _createdTeamId == null ? (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedSport = val);
+                                  }
+                                } : null,
+                              ),
+                            ),
+                          ),
                     const SizedBox(height: 24),
                     Text(
                       'Team Logo or Photo',
@@ -255,12 +407,20 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     ),
                     const SizedBox(height: 10),
                     ProfilePhotoPicker(
-                      hasPhoto: _hasPhoto,
-                      onUpload: () => setState(() => _hasPhoto = true),
-                      onClear: () => setState(() => _hasPhoto = false),
+                      hasPhoto: _uploadedLogoUrl != null,
+                      photoUrl: _uploadedLogoUrl,
+                      isUploading: _isUploadingLogo,
+                      onUpload: _createdTeamId == null ? _pickAndUploadLogo : () {},
+                      onClear: _createdTeamId == null ? () {
+                        setState(() {
+                          _uploadedLogoUrl = null;
+                          _uploadedLogoPath = null;
+                        });
+                      } : () {},
                     ),
                     const SizedBox(height: 26),
-                    for (var i = 0; i < _players.length; i++) ...[
+                    if (_createdTeamId != null) ...[
+                      for (var i = 0; i < _players.length; i++) ...[
                       Row(
                         children: [
                           Text(
@@ -314,7 +474,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     Row(
                       children: [
                         Text(
-                          '${_players.length}/$_kMaxPlayers',
+                          '${_players.length} Players',
                           style: GoogleFonts.quicksand(
                             color: Colors.white54,
                             fontSize: 13,
@@ -361,31 +521,36 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                         ),
                       ],
                     ),
+                    ],
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: GestureDetector(
-                  onTap: _isTeamReady ? _handleSaveTeam : null,
+                  onTap: _createdTeamId == null
+                      ? (_isTeamReady ? _handleCreateTeam : null)
+                      : _finishFlow,
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     width: double.infinity,
                     height: 54,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      gradient: _isTeamReady ? AppColors.bannerGradient : null,
-                      color: _isTeamReady ? null : AppColors.glassFillLighter,
+                      gradient: (_createdTeamId != null || _isTeamReady)
+                          ? AppColors.bannerGradient
+                          : null,
+                      color: (_createdTeamId != null || _isTeamReady)
+                          ? null
+                          : AppColors.glassFillLighter,
                       borderRadius: BorderRadius.circular(16),
-                      border: _isTeamReady
+                      border: (_createdTeamId != null || _isTeamReady)
                           ? null
                           : Border.all(color: AppColors.glassBorder),
-                      boxShadow: _isTeamReady
+                      boxShadow: (_createdTeamId != null || _isTeamReady)
                           ? [
                               BoxShadow(
-                                color: const Color(
-                                  0xFFFF7A1E,
-                                ).withValues(alpha: 0.4),
+                                color: const Color(0xFFFF7A1E).withValues(alpha: 0.4),
                                 blurRadius: 22,
                                 offset: const Offset(0, 10),
                               ),
@@ -393,9 +558,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                           : null,
                     ),
                     child: Text(
-                      'Save Team',
+                      _createdTeamId == null ? 'Create Team' : 'Finish & View Team',
                       style: GoogleFonts.quicksand(
-                        color: _isTeamReady ? Colors.white : Colors.white38,
+                        color: (_createdTeamId != null || _isTeamReady)
+                            ? Colors.white
+                            : Colors.white38,
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                       ),

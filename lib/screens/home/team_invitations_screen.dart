@@ -3,63 +3,40 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/globalefunction/global_functions.dart';
 import '../../core/widgets/glass_back_button.dart';
-
-enum TeamInviteStatus { live, registered }
+import '../../core/apiServices/user_api.dart';
 
 class TeamInvitation {
-  const TeamInvitation({
+  TeamInvitation({
     required this.id,
     required this.teamName,
     required this.captain,
     required this.sport,
-    required this.status,
-    required this.eventLabel,
-    required this.sideLabel,
-    required this.timeRemaining,
+    required this.logoUrl,
+    required this.createdAt,
   });
 
-  final String id;
+  final int id;
   final String teamName;
   final String captain;
   final String sport;
-  final TeamInviteStatus status;
-  final String eventLabel;
-  final String sideLabel;
-  final String timeRemaining;
-}
+  final String? logoUrl;
+  final String createdAt;
 
-const _dummyInvites = [
-  TeamInvitation(
-    id: '1',
-    teamName: 'SPOTO Warriors',
-    captain: 'Rahul Kumar',
-    sport: 'Cricket',
-    status: TeamInviteStatus.live,
-    eventLabel: 'Hyderabad Super League',
-    sideLabel: 'Match in progress',
-    timeRemaining: '13:38',
-  ),
-  TeamInvitation(
-    id: '2',
-    teamName: 'Hyderabad Strikers',
-    captain: 'Arjun Reddy',
-    sport: 'Cricket',
-    status: TeamInviteStatus.registered,
-    eventLabel: 'Telangana City Qualifiers',
-    sideLabel: 'Starts 24 Sep',
-    timeRemaining: '11:14',
-  ),
-  TeamInvitation(
-    id: '3',
-    teamName: 'City Challengers',
-    captain: 'Vijay Kumar',
-    sport: 'Cricket',
-    status: TeamInviteStatus.registered,
-    eventLabel: 'City Cup 2026',
-    sideLabel: 'Starts 28 Sep',
-    timeRemaining: '09:42',
-  ),
-];
+  factory TeamInvitation.fromJson(Map<String, dynamic> json) {
+    final team = json['team'] ?? {};
+    final invitedBy = json['invited_by_user'] ?? {};
+    final sportObj = team['sport'] ?? {};
+    
+    return TeamInvitation(
+      id: json['id'] as int,
+      teamName: team['name'] ?? 'Unknown Team',
+      captain: invitedBy['name'] ?? 'Captain',
+      sport: sportObj['name'] ?? 'Unknown Sport',
+      logoUrl: team['logo_url'],
+      createdAt: json['created_at'] ?? '',
+    );
+  }
+}
 
 /// Attention hub → Team Invitations: accept or reject pending team invites.
 class TeamInvitationsScreen extends StatefulWidget {
@@ -70,16 +47,123 @@ class TeamInvitationsScreen extends StatefulWidget {
 }
 
 class _TeamInvitationsScreenState extends State<TeamInvitationsScreen> {
-  late List<TeamInvitation> _invites = List.of(_dummyInvites);
+  final List<TeamInvitation> _invites = [];
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 1;
+  final int _perPage = 10;
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String _currentSearch = '';
 
-  void _respond(TeamInvitation invite, bool accepted) {
-    setState(() => _invites.removeWhere((item) => item.id == invite.id));
-    MCP.showMessage(
-      context,
-      accepted
-          ? 'You joined ${invite.teamName}.'
-          : 'Invitation from ${invite.teamName} declined.',
+  @override
+  void initState() {
+    super.initState();
+    _fetchInvitations();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoadingMore && _hasMore) {
+        _currentPage++;
+        _fetchInvitations(isLoadMore: true);
+      }
+    }
+  }
+
+  Future<void> _fetchInvitations({bool isLoadMore = false}) async {
+    if (isLoadMore) {
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      final res = await UserApis().getInvitations(_currentPage, _perPage, _currentSearch);
+      if (res != null && res['success'] == true && res['data'] is List) {
+        final List<dynamic> data = res['data'];
+        final newInvites = data.map((json) => TeamInvitation.fromJson(json)).toList();
+        
+        setState(() {
+          if (isLoadMore) {
+            _invites.addAll(newInvites);
+          } else {
+            _invites.clear();
+            _invites.addAll(newInvites);
+          }
+          final meta = res['meta'];
+          if (meta != null) {
+            _hasMore = _currentPage < (meta['last_page'] ?? 1);
+          } else {
+            _hasMore = newInvites.length == _perPage;
+          }
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String val) {
+    _currentSearch = val;
+    _currentPage = 1;
+    _hasMore = true;
+    _fetchInvitations();
+  }
+
+  Future<void> _respond(TeamInvitation invite, bool accepted) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
     );
+
+    try {
+      final res = accepted
+          ? await UserApis().acceptInvitation(invite.id)
+          : await UserApis().rejectInvitation(invite.id);
+
+      if (mounted) Navigator.pop(context); // close loader
+
+      if (res != null && res['success'] == true) {
+        setState(() => _invites.removeWhere((item) => item.id == invite.id));
+        if (mounted) {
+          MCP.showMessage(
+            context,
+            res['message'] ?? (accepted ? 'Invitation accepted.' : 'Invitation rejected.'),
+            backgroundColor: accepted ? Colors.green.shade600 : Colors.red.shade600,
+          );
+        }
+      } else {
+        if (mounted) {
+          MCP.showMessage(context, res?['message'] ?? 'Failed to process invitation');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        MCP.showMessage(context, 'An error occurred.');
+      }
+    }
   }
 
   @override
@@ -114,20 +198,43 @@ class _TeamInvitationsScreenState extends State<TeamInvitationsScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                child: Text(
-                  _invites.isEmpty
-                      ? 'You have no team invitations'
-                      : 'You have ${_invites.length} Team Invitation${_invites.length == 1 ? '' : 's'}',
-                  style: GoogleFonts.quicksand(
-                    color: Colors.white54,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Search by team or sport...',
+                    hintStyle: GoogleFonts.quicksand(color: Colors.white38),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                    filled: true,
+                    fillColor: AppColors.glassFillLighter,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
                 ),
               ),
+              if (!_isLoading)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Text(
+                    _invites.isEmpty
+                        ? 'You have no team invitations'
+                        : 'You have ${_invites.length} pending invitation${_invites.length == 1 ? '' : 's'}',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white54,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               Expanded(
-                child: _invites.isEmpty
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.mintGreen))
+                    : _invites.isEmpty
                     ? Center(
                         child: Text(
                           'All caught up.',
@@ -135,10 +242,19 @@ class _TeamInvitationsScreenState extends State<TeamInvitationsScreen> {
                         ),
                       )
                     : ListView.separated(
+                        controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                        itemCount: _invites.length,
+                        itemCount: _invites.length + (_isLoadingMore ? 1 : 0),
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
+                          if (index == _invites.length) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: CircularProgressIndicator(color: AppColors.mintGreen),
+                              ),
+                            );
+                          }
                           final invite = _invites[index];
                           return _InviteCard(
                             invite: invite,
@@ -169,7 +285,6 @@ class _InviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLive = invite.status == TeamInviteStatus.live;
     final narrow = MediaQuery.sizeOf(context).width < 360;
 
     return Container(
@@ -194,7 +309,12 @@ class _InviteCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.glassBorder),
                 ),
-                child: const Icon(Icons.sports_cricket_rounded, color: AppColors.amberAccent, size: 22),
+                child: invite.logoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(invite.logoUrl!, width: 42, height: 42, fit: BoxFit.cover),
+                      )
+                    : const Icon(Icons.sports_cricket_rounded, color: AppColors.amberAccent, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -213,7 +333,7 @@ class _InviteCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Captain: ${invite.captain}',
+                      'Invited by: ${invite.captain}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
@@ -232,85 +352,15 @@ class _InviteCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                flex: 3,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isLive
-                        ? const Color(0xFFFF4D30).withValues(alpha: 0.16)
-                        : AppColors.mintGreen.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      if (isLive)
-                        Container(
-                          width: 7,
-                          height: 7,
-                          margin: const EdgeInsets.only(right: 6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF4D30),
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      else
-                        const Padding(
-                          padding: EdgeInsets.only(right: 6),
-                          child: Icon(Icons.emoji_events_rounded, color: AppColors.mintGreen, size: 13),
-                        ),
-                      Expanded(
-                        child: Text(
-                          isLive ? 'LIVE  •  ${invite.eventLabel}' : 'Registered  •  ${invite.eventLabel}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.quicksand(
-                            color: isLive ? const Color(0xFFFF8A80) : AppColors.mintGreen,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                flex: 2,
-                child: Text(
-                  invite.sideLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.timer_outlined, color: Colors.white38, size: 16),
+              const Icon(Icons.access_time_rounded, color: Colors.white38, size: 16),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Time remaining',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                invite.timeRemaining,
-                style: GoogleFonts.quicksand(
-                  color: AppColors.mintGreen,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  invite.createdAt.split('T').first,
+                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
             ],

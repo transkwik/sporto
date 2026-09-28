@@ -84,7 +84,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                 child: GestureDetector(
                   onTap: () => Navigator.of(
                     context,
-                  ).push(MaterialPageRoute(builder: (_) => TeamRosterScreen(
+                  ).pushReplacement(MaterialPageRoute(builder: (_) => TeamRosterScreen(
                     team: widget.team,
                     tournament: widget.tournament,
                   ))),
