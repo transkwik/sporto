@@ -53,11 +53,11 @@ class PrizeDetailsBanner extends StatelessWidget {
                             'TOURNAMENT COMPLETED!',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.quicksand(
+                            style: GoogleFonts.abrilFatface(
                               color: const Color(0xFFE3A93D),
                               fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
+                              fontWeight: FontWeight.bold,
+                              // letterSpacing: 0.6,
                             ),
                           ),
                         ),
@@ -68,7 +68,7 @@ class PrizeDetailsBanner extends StatelessWidget {
                       details.tournamentTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.quicksand(
+                      style: GoogleFonts.abrilFatface(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,

@@ -20,6 +20,7 @@ import '../profile/notifications_screen.dart';
 import '../profile/wallet_transactions_screen.dart';
 import '../../routes/app_routes.dart';
 import 'attention_hub_screen.dart';
+import '../team_up/team_up_screen.dart';
 import '../tournament/tournament_detail_screen.dart';
 import '../tournament/tournaments_list_screen.dart';
 import 'prize_details_screen.dart';
@@ -29,6 +30,7 @@ import 'widgets/prize_details_banner.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
+import 'widgets/home_shortcut_strip.dart';
 import 'widgets/live_match_spotlight_card.dart';
 import 'widgets/next_match_card.dart';
 import 'widgets/quick_action_button.dart';
@@ -391,6 +393,25 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 25),
+        HomeShortcutStrip(
+          onTeamUp: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TeamUpScreen()),
+            );
+          },
+          onVenues: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TournamentsListScreen()),
+            );
+          },
+          onWallet: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+            );
+          },
+          onStats: () => Navigator.of(context).pushNamed(AppRoutes.rankings),
         ),
         const SizedBox(height: 25),
         Consumer<HomeProvider>(
