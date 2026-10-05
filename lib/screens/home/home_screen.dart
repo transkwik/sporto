@@ -17,6 +17,8 @@ import '../live_matches/live_matches_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/notifications_screen.dart';
+import '../celebrate/celebrate_screen.dart';
+import '../sponsor/sponsor_screen.dart';
 import '../profile/wallet_transactions_screen.dart';
 import '../../routes/app_routes.dart';
 import 'attention_hub_screen.dart';
@@ -448,6 +450,16 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
             );
           },
           onStats: () => Navigator.of(context).pushNamed(AppRoutes.rankings),
+          onCelebrate: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CelebrateScreen()),
+            );
+          },
+          onSponsors: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SponsorScreen()),
+            );
+          },
         ),
         const SizedBox(height: 25),
         Consumer<HomeProvider>(

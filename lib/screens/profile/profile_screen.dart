@@ -8,8 +8,10 @@ import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'my_achievements_screen.dart';
 import 'my_awards_screen.dart';
+import 'my_prizes_screen.dart';
 import 'my_fan_tips_screen.dart';
 import 'wallet_transactions_screen.dart';
+import '../sponsor/my_sponsorships_screen.dart';
 import 'widgets/championship_journey_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_tile.dart';
@@ -45,6 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.of(context).pushNamed(AppRoutes.myTournaments);
       case 'All Tournaments':
         Navigator.of(context).pushNamed(AppRoutes.allTournaments);
+      case 'My Sponsorships':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => MySponsorshipsScreen()),
+        );
       case 'Achievements':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
@@ -52,6 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'My Awards':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const MyAwardsScreen()),
+        );
+      case 'My Prizes':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyPrizesScreen()),
         );
       case 'My Fan Tips':
         Navigator.of(context).push(

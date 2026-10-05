@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/wallet_transaction_info.dart';
 import 'transaction_details_screen.dart';
+import 'withdraw_to_bank_screen.dart';
 
 /// Profile → Wallet & Transactions: balance, history actions, settlements.
 class WalletTransactionsScreen extends StatelessWidget {
@@ -95,8 +96,8 @@ class WalletTransactionsScreen extends StatelessWidget {
                           const SizedBox(width: 10),
                           GestureDetector(
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Withdraw to bank coming soon.')),
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const WithdrawToBankScreen()),
                               );
                             },
                             child: Container(

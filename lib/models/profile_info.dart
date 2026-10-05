@@ -144,6 +144,12 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     subtitle: 'Prize splits & individual awards',
   ),
   ProfileMenuItem(
+    icon: Icons.card_giftcard_rounded,
+    iconColor: AppColors.amberAccent,
+    label: 'My Prizes',
+    subtitle: 'Earnings, pending & payouts',
+  ),
+  ProfileMenuItem(
     icon: Icons.notifications_rounded,
     iconColor: AppColors.amberAccent,
     label: 'Notifications',

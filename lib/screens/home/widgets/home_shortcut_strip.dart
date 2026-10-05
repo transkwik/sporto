@@ -3,12 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Horizontal shortcut tiles on Home, above Upcoming Matches.
 class HomeShortcutStrip extends StatelessWidget {
-  const HomeShortcutStrip({super.key, required this.onTeamUp, required this.onVenues, required this.onWallet, required this.onStats});
+  const HomeShortcutStrip({
+    super.key,
+    required this.onTeamUp,
+    required this.onVenues,
+    required this.onWallet,
+    required this.onStats,
+    required this.onCelebrate,
+    required this.onSponsors,
+  });
 
   final VoidCallback onTeamUp;
   final VoidCallback onVenues;
   final VoidCallback onWallet;
   final VoidCallback onStats;
+  final VoidCallback onCelebrate;
+  final VoidCallback onSponsors;
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +27,10 @@ class HomeShortcutStrip extends StatelessWidget {
       (Icons.sports_cricket_rounded, 'Venues', 'Book & Play'),
       (Icons.sports_cricket_rounded, 'Wallet', 'Prizes & Credits'),
       (Icons.sports_cricket_rounded, 'Stats', 'Form & Rank'),
+      (Icons.celebration_rounded, 'Celebrate', 'Fan Support'),
+      (Icons.workspace_premium_rounded, 'Sponsors', 'Fund a Prize'),
     ];
-    final actions = [onTeamUp, onVenues, onWallet, onStats];
+    final actions = [onTeamUp, onVenues, onWallet, onStats, onCelebrate, onSponsors];
 
     return SizedBox(
       height: 142,
