@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/my_team_info.dart';
 
 /// Team row on My Teams: complete squads vs action-required incomplete ones.
 class MyTeamCard extends StatelessWidget {
@@ -12,16 +11,33 @@ class MyTeamCard extends StatelessWidget {
     this.onMenu,
   });
 
-  final MyTeamInfo team;
+  final Map<String, dynamic> team;
   final VoidCallback? onTap;
   final VoidCallback? onComplete;
   final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
-    final incomplete = !team.isComplete;
+    final completion = team['completion'] ?? {};
+    final isComplete = completion['is_complete'] == true;
+    final incomplete = !isComplete;
     final nameColor = incomplete ? Colors.white70 : Colors.white;
     final muted = incomplete ? Colors.white38 : Colors.white54;
+    
+    final teamName = team['team_name']?.toString() ?? 'Unknown';
+    final captainName = team['captain']?['profile']?['full_name']?.toString() ?? 'No Captain';
+    final avatarInitials = teamName.isNotEmpty ? teamName.substring(0, 1).toUpperCase() : 'T';
+    final avatarColor = const Color(0xFF293241);
+    final wins = team['stats']?['wins'] ?? 0;
+    final titles = team['stats']?['titles'] ?? 0;
+    final playersCount = team['players']?['current'] ?? 0;
+    final maxPlayers = team['players']?['maximum'];
+    final tournamentsPlayed = team['stats']?['tournaments_played'] ?? 0;
+    
+    // Determine issue logic from backend
+    final warningLabel = completion['message']?.toString() ?? 'Action Required';
+    final showCompleteButton = completion['action'] == 'COMPLETE_TEAM';
+    final actionLabel = completion['action_label']?.toString() ?? 'Complete Team';
 
     return GestureDetector(
       onTap: onTap,
@@ -30,10 +46,9 @@ class MyTeamCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: team.highlighted ? AppColors.liveCardGradient : null,
-          color: team.highlighted ? null : const Color(0xFF1A1E28),
+          color: const Color(0xFF1A1E28),
           border: Border.all(
-            color: team.highlighted ? Colors.transparent : AppColors.glassBorder,
+            color: AppColors.glassBorder,
           ),
         ),
         child: Column(
@@ -43,9 +58,9 @@ class MyTeamCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: team.avatarColor,
+                  backgroundColor: avatarColor,
                   child: Text(
-                    team.avatarInitials,
+                    avatarInitials,
                     style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -55,24 +70,26 @@ class MyTeamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        team.name,
+                        teamName,
                         style: TextStyle(color: nameColor, fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Captain: ${team.captainName}',
+                        'Captain: $captainName',
                         style: TextStyle(color: muted, fontSize: 12.5),
                       ),
-                      if (team.isComplete) ...[
+                      if (isComplete) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '${team.wins} Wins  •  ${team.titles} Titles',
+                          '$wins Wins  •  $titles Titles',
                           style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                       const SizedBox(height: 4),
                       Text(
-                        '${team.playersCount}/${team.maxPlayers} Players  •  ${team.tournamentsPlayed} Tournaments Played',
+                        maxPlayers != null
+                            ? '$playersCount/$maxPlayers Players  •  $tournamentsPlayed Tournaments Played'
+                            : '$playersCount Players  •  $tournamentsPlayed Tournaments Played',
                         style: TextStyle(color: muted, fontSize: 12),
                       ),
                     ],
@@ -93,7 +110,7 @@ class MyTeamCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      team.warningLabel,
+                      warningLabel,
                       style: const TextStyle(
                         color: Color(0xFFE8B48A),
                         fontSize: 12.5,
@@ -101,21 +118,22 @@ class MyTeamCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: onComplete,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6B1F1A),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF8B2E28)),
-                      ),
-                      child: const Text(
-                        'Complete Team',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                  if (showCompleteButton)
+                    GestureDetector(
+                      onTap: onComplete,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6B1F1A),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF8B2E28)),
+                        ),
+                        child: Text(
+                          actionLabel,
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
-import '../../models/my_team_info.dart';
 import '../../models/my_tournament_info.dart';
 import 'match_result_details_screen.dart';
 
@@ -10,7 +9,7 @@ import 'match_result_details_screen.dart';
 class TeamTournamentMatchesScreen extends StatelessWidget {
   const TeamTournamentMatchesScreen({super.key, required this.tournament});
 
-  final TeamHistoryTournament tournament;
+  final Map<String, dynamic> tournament;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +31,7 @@ class TeamTournamentMatchesScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            tournament.title,
+                            tournament['title']?.toString() ?? 'Tournament',
                             style: GoogleFonts.quicksand(
                               color: Colors.white,
                               fontSize: 20,
@@ -41,7 +40,7 @@ class TeamTournamentMatchesScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            tournament.dateRange,
+                            tournament['dateRange']?.toString() ?? '',
                             style: GoogleFonts.quicksand(
                               color: Colors.white54,
                               fontSize: 12.5,
@@ -57,10 +56,10 @@ class TeamTournamentMatchesScreen extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                  itemCount: tournament.matches.length,
+                  itemCount: (tournament['matches'] as List<dynamic>? ?? []).length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final match = tournament.matches[index];
+                    final match = (tournament['matches'] as List<dynamic>?)?[index] as MyTournamentMatchResult;
                     return _MatchResultCard(
                       match: match,
                       onView: () {
@@ -68,8 +67,8 @@ class TeamTournamentMatchesScreen extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (_) => MatchResultDetailsScreen(
                               match: match,
-                              tournamentTitle: tournament.title,
-                              dateRange: tournament.dateRange,
+                              tournamentTitle: tournament['title']?.toString() ?? 'Tournament',
+                              dateRange: tournament['dateRange']?.toString() ?? '',
                             ),
                           ),
                         );

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/my_tournament_info.dart';
+import '../../core/apiServices/user_api.dart';
 import '../tournament/widgets/tournament_stat_box.dart';
 import 'match_result_details_screen.dart';
 import 'widgets/squad_player_stat_card.dart';
@@ -19,8 +20,67 @@ class MyTournamentDetailsScreen extends StatefulWidget {
 
 class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
   int _tab = 0;
+  bool _isLoading = true;
+  Map<String, dynamic>? _apiData;
+  List<MyTournamentPlayerStat> _squad = [];
+  List<MyTournamentMatchResult> _matches = [];
 
   MyTournamentInfo get t => widget.tournament;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetails();
+  }
+
+  Future<void> _fetchDetails() async {
+    final response = await UserApis().getTournamentDetail(int.parse(widget.tournament.id));
+    if (response != null && response['success'] == true) {
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // Parse Squad
+      final membersList = data['my_registration']?['team']?['members'] as List<dynamic>? ?? [];
+      _squad = membersList.map((m) {
+        final member = m as Map<String, dynamic>;
+        return MyTournamentPlayerStat(
+          name: member['player_name']?.toString() ?? 'Unknown',
+          role: member['is_captain'] == true ? 'Captain' : 'Player',
+          runs: 0,
+          wickets: 0,
+        );
+      }).toList();
+
+      // Parse Matches
+      final matchesList = data['matches']?['items'] as List<dynamic>? ?? [];
+      _matches = matchesList.map((m) {
+        final item = m as Map<String, dynamic>;
+        final match = item['match'] ?? {};
+        final teams = item['teams'] as List<dynamic>? ?? [];
+        
+        String teamA = 'TBD';
+        String teamB = 'TBD';
+        if (teams.isNotEmpty) teamA = teams[0]['name']?.toString() ?? 'TBD';
+        if (teams.length > 1) teamB = teams[1]['name']?.toString() ?? 'TBD';
+
+        return MyTournamentMatchResult(
+          matchLabel: 'Match ${match['match_number'] ?? 0} - ${match['status'] ?? 'Upcoming'}',
+          teamA: teamA,
+          teamB: teamB,
+          scoreA: 'Yet to bat',
+          scoreB: 'Yet to bat',
+        );
+      }).toList();
+
+      setState(() {
+        _apiData = data;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,56 +108,66 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
                   ],
                 ),
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                  children: [
-                    _SummaryCard(tournament: t),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: TournamentStatBox(value: '${t.played}', label: 'Played')),
-                        const SizedBox(width: 8),
-                        Expanded(child: TournamentStatBox(value: '${t.won}', label: 'Won')),
-                        const SizedBox(width: 8),
-                        Expanded(child: TournamentStatBox(value: '${t.lost}', label: 'Lost')),
-                        const SizedBox(width: 8),
-                        Expanded(child: TournamentStatBox(value: t.finalRank > 0 ? '${t.finalRank}' : '—', label: 'Final Rank')),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _PrizeBar(amount: t.prizeEarned, caption: t.prizeCaption),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        _TabLabel(label: 'Squad Performance', selected: _tab == 0, onTap: () => setState(() => _tab = 0)),
-                        const SizedBox(width: 22),
-                        _TabLabel(label: 'Match Results', selected: _tab == 1, onTap: () => setState(() => _tab = 1)),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    if (_tab == 0)
-                      for (final player in t.squad) ...[
-                        SquadPlayerStatCard(player: player),
-                        const SizedBox(height: 10),
-                      ]
-                    else
-                      for (final match in t.matchResults) ...[
-                        _MatchResultCard(
-                          match: match,
-                          onView: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => MatchResultDetailsScreen(match: match),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                  ],
+              if (_isLoading)
+                const Expanded(child: Center(child: CircularProgressIndicator()))
+              else if (_apiData == null)
+                Expanded(child: Center(child: Text("Failed to load details", style: GoogleFonts.quicksand(color: Colors.white))))
+              else
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                    children: [
+                      _SummaryCard(
+                        title: _apiData!['tournament']?['name']?.toString() ?? t.title,
+                        dateRange: t.dateRange, // API gives start and end at, keeping it simple for now
+                        location: _apiData!['tournament']?['location']?.toString() ?? t.location,
+                        championTeam: _apiData!['result']?['winner']?.toString() ?? '',
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: TournamentStatBox(value: '${_apiData!['match_summary']?['total'] ?? 0}', label: 'Played')),
+                          const SizedBox(width: 8),
+                          const Expanded(child: TournamentStatBox(value: '-', label: 'Won')),
+                          const SizedBox(width: 8),
+                          const Expanded(child: TournamentStatBox(value: '-', label: 'Lost')),
+                          const SizedBox(width: 8),
+                          const Expanded(child: TournamentStatBox(value: '—', label: 'Final Rank')),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _PrizeBar(amount: '${_apiData!['tournament']?['prize_amount'] ?? '0'}', caption: 'Total Prize Pool'),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          _TabLabel(label: 'Squad Performance', selected: _tab == 0, onTap: () => setState(() => _tab = 0)),
+                          const SizedBox(width: 22),
+                          _TabLabel(label: 'Match Results', selected: _tab == 1, onTap: () => setState(() => _tab = 1)),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (_tab == 0)
+                        for (final player in _squad) ...[
+                          SquadPlayerStatCard(player: player),
+                          const SizedBox(height: 10),
+                        ]
+                      else
+                        for (final match in _matches) ...[
+                          _MatchResultCard(
+                            match: match,
+                            onView: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => MatchResultDetailsScreen(match: match),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -144,9 +214,17 @@ class _TabLabel extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.tournament});
+  const _SummaryCard({
+    required this.title,
+    required this.dateRange,
+    required this.location,
+    required this.championTeam,
+  });
 
-  final MyTournamentInfo tournament;
+  final String title;
+  final String dateRange;
+  final String location;
+  final String championTeam;
 
   @override
   Widget build(BuildContext context) {
@@ -166,12 +244,12 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  tournament.title,
+                  title,
                   style: GoogleFonts.quicksand(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ),
               Text(
-                tournament.dateRange,
+                dateRange,
                 style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
               ),
             ],
@@ -181,13 +259,17 @@ class _SummaryCard extends StatelessWidget {
             children: [
               const Icon(Icons.location_on_outlined, color: Colors.white54, size: 14),
               const SizedBox(width: 3),
-              Text(
-                tournament.location,
-                style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+              Expanded(
+                child: Text(
+                  location,
+                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          if (tournament.championTeam.isNotEmpty) ...[
+          if (championTeam.isNotEmpty) ...[
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
@@ -212,7 +294,7 @@ class _SummaryCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        tournament.championTeam,
+                        championTeam,
                         style: GoogleFonts.quicksand(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                     ],

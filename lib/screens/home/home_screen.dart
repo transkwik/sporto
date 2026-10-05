@@ -172,6 +172,28 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
     super.dispose();
   }
 
+  Future<void> _onRefresh() async {
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+    final locProvider = Provider.of<LocationProvider>(context, listen: false);
+    
+    // Refresh sports list
+    await homeProvider.fetchSports();
+    
+    // Determine selected sport
+    final sportId = _selectedCategory == 0 || homeProvider.sportsList.isEmpty 
+        ? '' 
+        : homeProvider.sportsList[_selectedCategory - 1]['id']?.toString() ?? '';
+        
+    // Refresh matches
+    homeProvider.fetchLiveMatches(sportId, isRefresh: true);
+    homeProvider.fetchUpcomingMatches(sportId, isRefresh: true);
+    
+    // Refresh tournaments
+    double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
+    double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
+    homeProvider.fetchTournaments(isRefresh: true, lat: lat, lng: lng, sportId: sportId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -191,10 +213,14 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
       location = city;
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      children: [
-        HomeHeader(
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: AppColors.mintGreen,
+      backgroundColor: AppColors.secondary,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        children: [
+          HomeHeader(
           walletBalance: '₹ 500',
           onAddFunds: () {
             Navigator.of(context).push(
@@ -268,7 +294,17 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                       final status = match?['status'] ?? 'Scheduled';
                       
                       final sportName = matchData['sport']?['name'] ?? 'Unknown Sport';
-                      final title = matchData['format']?['name'] ?? 'Tournament';
+                      final tournamentName = matchData['tournament']?['name'];
+                      final formatName = matchData['format']?['name'];
+                      
+                      String title = 'Tournament';
+                      if (tournamentName != null && formatName != null) {
+                        title = '$tournamentName • $formatName';
+                      } else if (tournamentName != null) {
+                        title = tournamentName.toString();
+                      } else if (formatName != null) {
+                        title = formatName.toString();
+                      }
                       
                       final teams = matchData['teams'] as List<dynamic>? ?? [];
                       final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
@@ -458,7 +494,17 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                       final status = match?['status'] ?? 'Scheduled';
                       
                       final sportName = matchData['sport']?['name'] ?? 'Unknown Sport';
-                      final title = matchData['format']?['name'] ?? 'Tournament';
+                      final tournamentName = matchData['tournament']?['name'];
+                      final formatName = matchData['format']?['name'];
+                      
+                      String title = 'Tournament';
+                      if (tournamentName != null && formatName != null) {
+                        title = '$tournamentName • $formatName';
+                      } else if (tournamentName != null) {
+                        title = tournamentName.toString();
+                      } else if (formatName != null) {
+                        title = formatName.toString();
+                      }
                       
                       final teams = matchData['teams'] as List<dynamic>? ?? [];
                       final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
@@ -560,8 +606,9 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         const SizedBox(height: 6),
         AdsBanner(onTap: () {}),
       ],
-    );
-  }
+    ),
+  );
+}
 }
 
 class _LocationRow extends StatelessWidget {

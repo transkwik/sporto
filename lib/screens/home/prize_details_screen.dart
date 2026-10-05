@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
-import '../../models/my_team_info.dart';
 import '../../models/my_tournament_info.dart';
 import '../../models/prize_details_info.dart';
 import '../profile/my_tournament_details_screen.dart';
@@ -18,7 +17,9 @@ class PrizeDetailsScreen extends StatelessWidget {
 
   void _openCalculation(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PrizeCalculationScreen(details: details)),
+      MaterialPageRoute(
+        builder: (_) => PrizeCalculationScreen(details: details),
+      ),
     );
   }
 
@@ -29,7 +30,9 @@ class PrizeDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -55,7 +58,10 @@ class PrizeDetailsScreen extends StatelessWidget {
                           ),
                           Text(
                             d.dateLabel,
-                            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -71,21 +77,30 @@ class PrizeDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     Text(
                       'Distribution Progress',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     _ProgressCard(steps: d.steps),
                     const SizedBox(height: 18),
                     Text(
                       'Winning Team Prize',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     _WinningTeamCard(details: d),
                     const SizedBox(height: 18),
                     Text(
                       'Your Prizes',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     for (final line in d.yourPrizes) ...[
@@ -99,7 +114,10 @@ class PrizeDetailsScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Total prize',
-                              style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white54,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                           Text(
@@ -139,7 +157,8 @@ class PrizeDetailsScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => PrizeDistributionScreen(details: details),
+                            builder: (_) =>
+                                PrizeDistributionScreen(details: details),
                           ),
                         );
                       },
@@ -185,7 +204,9 @@ class PrizeDetailsScreen extends StatelessWidget {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => TeamHistoryScreen(team: dummyMyTeams.first),
+                                  builder: (_) => TeamHistoryScreen(
+                                    team: const {'team_name': 'My Team'},
+                                  ),
                                 ),
                               );
                             },
@@ -198,7 +219,9 @@ class PrizeDetailsScreen extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Help Center coming soon.')),
+                            const SnackBar(
+                              content: Text('Help Center coming soon.'),
+                            ),
                           );
                         },
                         child: Text(
@@ -248,7 +271,11 @@ class _LeagueHeader extends StatelessWidget {
             ),
             child: Text(
               details.sport,
-              style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w600),
+              style: GoogleFonts.quicksand(
+                color: Colors.white70,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -256,15 +283,25 @@ class _LeagueHeader extends StatelessWidget {
             details.tournamentTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _StatusChip(label: details.eventStatus, color: AppColors.mintGreen),
-              _StatusChip(label: details.prizeStatus, color: const Color(0xFFFF8A1E)),
+              _StatusChip(
+                label: details.eventStatus,
+                color: AppColors.mintGreen,
+              ),
+              _StatusChip(
+                label: details.prizeStatus,
+                color: const Color(0xFFFF8A1E),
+              ),
             ],
           ),
         ],
@@ -294,7 +331,11 @@ class _StatusChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.quicksand(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+            style: GoogleFonts.quicksand(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -346,7 +387,10 @@ class _ProgressRow extends StatelessWidget {
         inner = Container(
           width: 8,
           height: 8,
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
         );
       case PrizeStepState.pending:
         dot = const Color(0xFF3A4150);
@@ -390,7 +434,9 @@ class _ProgressRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.quicksand(
-                    color: step.state == PrizeStepState.pending ? Colors.white38 : Colors.white,
+                    color: step.state == PrizeStepState.pending
+                        ? Colors.white38
+                        : Colors.white,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -400,7 +446,10 @@ class _ProgressRow extends StatelessWidget {
                     step.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5),
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white54,
+                      fontSize: 11.5,
+                    ),
                   ),
               ],
             ),
@@ -433,12 +482,18 @@ class _WinningTeamCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.amberAccent.withValues(alpha: 0.7)),
+              border: Border.all(
+                color: AppColors.amberAccent.withValues(alpha: 0.7),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.emoji_events_rounded, color: AppColors.amberAccent, size: 14),
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: AppColors.amberAccent,
+                  size: 14,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Winning Team',
@@ -454,7 +509,11 @@ class _WinningTeamCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.sports_cricket_rounded, color: Colors.white70, size: 18),
+              const Icon(
+                Icons.sports_cricket_rounded,
+                color: Colors.white70,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -474,7 +533,10 @@ class _WinningTeamCard extends StatelessWidget {
                       details.winningEventSubtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -482,15 +544,27 @@ class _WinningTeamCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _KV(label: 'Team Prize', value: details.teamPrize, valueColor: AppColors.amberAccent),
+          _KV(
+            label: 'Team Prize',
+            value: details.teamPrize,
+            valueColor: AppColors.amberAccent,
+          ),
           const SizedBox(height: 8),
           _KV(label: 'Eligible Players', value: details.eligiblePlayers),
           const SizedBox(height: 8),
-          _KV(label: 'Your Expected Share', value: details.expectedShare, valueColor: AppColors.amberAccent),
+          _KV(
+            label: 'Your Expected Share',
+            value: details.expectedShare,
+            valueColor: AppColors.amberAccent,
+          ),
           const SizedBox(height: 10),
           Text(
             details.creditNote,
-            style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 11.5, height: 1.4),
+            style: GoogleFonts.quicksand(
+              color: Colors.white38,
+              fontSize: 11.5,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -512,7 +586,11 @@ class _KV extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5, fontWeight: FontWeight.w600),
+            style: GoogleFonts.quicksand(
+              color: Colors.white70,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         Text(
@@ -545,7 +623,11 @@ class _YourPrizeRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.sports_cricket_rounded, color: Colors.white70, size: 18),
+          const Icon(
+            Icons.sports_cricket_rounded,
+            color: Colors.white70,
+            size: 18,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -555,7 +637,11 @@ class _YourPrizeRow extends StatelessWidget {
                   item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
                   item.amountLabel,
@@ -578,7 +664,11 @@ class _YourPrizeRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.sync_rounded, color: AppColors.infoBlue, size: 12),
+                const Icon(
+                  Icons.sync_rounded,
+                  color: AppColors.infoBlue,
+                  size: 12,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   item.status,

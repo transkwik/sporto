@@ -109,7 +109,17 @@ class _MatchesScreenState extends State<MatchesScreen> {
     final status = match?['status'] ?? 'Scheduled';
 
     final sportName = matchData['sport']?['name'] ?? 'Unknown Sport';
-    final title = matchData['format']?['name'] ?? 'Tournament';
+    final tournamentName = matchData['tournament']?['name'];
+    final formatName = matchData['format']?['name'];
+    
+    String title = 'Tournament';
+    if (tournamentName != null && formatName != null) {
+      title = '$tournamentName • $formatName';
+    } else if (tournamentName != null) {
+      title = tournamentName.toString();
+    } else if (formatName != null) {
+      title = formatName.toString();
+    }
 
     final teams = matchData['teams'] as List<dynamic>? ?? [];
     final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
@@ -324,22 +334,38 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         style: const TextStyle(color: Colors.white54, fontSize: 14),
                       ),
                     )
-                  : ListView.separated(
-                      controller: _listScrollController,
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                      itemCount: items.length + (loadingMore ? 1 : 0),
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        if (index == items.length) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: CircularProgressIndicator(color: AppColors.mintGreen),
-                            ),
-                          );
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+                        final sportId = _currentSportId(homeProvider);
+                        if (_tabIndex == 0) {
+                          await homeProvider.fetchLiveMatches(sportId, isRefresh: true);
+                        } else if (_tabIndex == 1) {
+                          await homeProvider.fetchUpcomingMatches(sportId, isRefresh: true);
+                        } else {
+                          await homeProvider.fetchAllMatches(sportId, isRefresh: true);
                         }
-                        return _buildMatchCard(items[index]);
                       },
+                      color: AppColors.mintGreen,
+                      backgroundColor: AppColors.secondary,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        controller: _listScrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                        itemCount: items.length + (loadingMore ? 1 : 0),
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          if (index == items.length) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(color: AppColors.mintGreen),
+                              ),
+                            );
+                          }
+                          return _buildMatchCard(items[index]);
+                        },
+                      ),
                     ),
         ),
         // AdsBanner(onTap: () {}),

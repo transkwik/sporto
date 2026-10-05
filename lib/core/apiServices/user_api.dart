@@ -253,4 +253,13 @@ class UserApis {
     log(response.toString());
     return response;
   }
+
+  getMyTournaments(int page, int perPage, {String? sportId, String? status}) async {
+    String url = 'tournaments/my?page=$page&per_page=$perPage';
+    if (sportId != null && sportId.isNotEmpty) url += '&sport_id=$sportId';
+    if (status != null && status.isNotEmpty) url += '&status=$status';
+    var response = await ApiHelper().getTypeGet(url);
+    log(response.toString());
+    return response;
+  }
 }

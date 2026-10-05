@@ -67,19 +67,29 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
             return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
 
-          if (list.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Text('No tournaments found',
-                    style: GoogleFonts.quicksand(color: Colors.white54)),
-              ),
-            );
-          }
-
-          return ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(20),
+          return RefreshIndicator(
+            onRefresh: () async {
+              await homeProvider.fetchTournaments(isRefresh: true);
+            },
+            color: AppColors.mintGreen,
+            backgroundColor: AppColors.secondary,
+            child: list.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                      Center(
+                        child: Text(
+                          'No tournaments found',
+                          style: GoogleFonts.quicksand(color: Colors.white54),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(20),
             itemCount: list.length + (homeProvider.isFetchingMoreTournaments ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == list.length) {
@@ -103,8 +113,9 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                 },
               );
             },
-          );
-        },
+          ),
+        );
+      },
       ),
         ),
       ),
