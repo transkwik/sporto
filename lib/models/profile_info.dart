@@ -126,6 +126,12 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     subtitle: 'Payments, tips, refunds',
   ),
   ProfileMenuItem(
+    icon: Icons.account_balance_rounded,
+    iconColor: AppColors.mintGreen,
+    label: 'Bank Account',
+    subtitle: 'Payout account & verification',
+  ),
+  ProfileMenuItem(
     icon: Icons.volunteer_activism_rounded,
     iconColor: AppColors.primary,
     label: 'My Fan Tips',

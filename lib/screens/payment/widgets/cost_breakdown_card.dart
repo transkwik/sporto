@@ -12,8 +12,8 @@ class CostBreakdownCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final entryFee = tournament['registration_fee']?.toString() ?? '0';
     final double feeVal = double.tryParse(entryFee) ?? 0.0;
-    final platformFeeStr = tournament['platform_fee']?.toString() ?? '0';
-    final double platformFee = double.tryParse(platformFeeStr) ?? 0.0;
+    final parsedPlatform = double.tryParse(tournament['platform_fee']?.toString() ?? '') ?? 0.0;
+    final double platformFee = parsedPlatform > 0 ? parsedPlatform : 15.0;
     final double total = feeVal + platformFee;
 
     return Container(

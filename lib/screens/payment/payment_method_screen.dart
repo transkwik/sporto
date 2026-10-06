@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
-import '../../models/payment_info.dart';
-import '../../models/team_info.dart';
 import '../../core/apiServices/user_api.dart';
 import '../../core/globalefunction/global_functions.dart';
 import 'payment_success_screen.dart';
@@ -133,8 +131,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   Widget build(BuildContext context) {
     final entryFee = widget.tournament['registration_fee']?.toString() ?? '0';
     final double feeVal = double.tryParse(entryFee) ?? 0.0;
-    final platformFeeStr = widget.tournament['platform_fee']?.toString() ?? '0';
-    final double platformFee = double.tryParse(platformFeeStr) ?? 0.0;
+    final parsedPlatform = double.tryParse(widget.tournament['platform_fee']?.toString() ?? '') ?? 0.0;
+    final double platformFee = parsedPlatform > 0 ? parsedPlatform : 15.0;
     final double total = feeVal + platformFee;
 
     return Scaffold(

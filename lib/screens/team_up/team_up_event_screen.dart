@@ -5,7 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/my_tournament_info.dart';
 import '../../models/team_up_info.dart';
-import '../profile/my_tournament_details_screen.dart';
+import '../profile/tournaments/my_tournament_details_screen.dart';
 import 'team_up_register_screen.dart';
 import 'widgets/team_up_featured_card.dart';
 

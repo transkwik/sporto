@@ -10,8 +10,8 @@ class HomeNavItem {
 }
 
 const List<HomeNavItem> homeNavItems = [
+  HomeNavItem(label: 'Home', iconOutlined: Icons.home_outlined, iconFilled: Icons.home_rounded),
   HomeNavItem(label: 'Tournaments', iconOutlined: Icons.emoji_events_outlined, iconFilled: Icons.emoji_events_rounded),
-  HomeNavItem(label: 'Live', iconOutlined: Icons.live_tv_outlined, iconFilled: Icons.live_tv_rounded),
   HomeNavItem(label: 'Matches', iconOutlined: Icons.play_circle_outline_rounded, iconFilled: Icons.play_circle_fill_rounded),
   HomeNavItem(label: 'Playground', iconOutlined: Icons.park_outlined, iconFilled: Icons.park_rounded),
   HomeNavItem(label: 'Profile', iconOutlined: Icons.person_outline_rounded, iconFilled: Icons.person_rounded),

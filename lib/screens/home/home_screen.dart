@@ -16,10 +16,10 @@ import '../Matches/Matches_screen.dart';
 import '../live_matches/live_matches_screen.dart';
 import '../playground/playground_screen.dart';
 import '../profile/profile_screen.dart';
-import '../profile/notifications_screen.dart';
+import '../profile/notifications/notifications_screen.dart';
 import '../celebrate/celebrate_screen.dart';
 import '../sponsor/sponsor_screen.dart';
-import '../profile/wallet_transactions_screen.dart';
+import '../profile/wallet/wallet_transactions_screen.dart';
 import '../../routes/app_routes.dart';
 import 'attention_hub_screen.dart';
 import '../team_up/team_up_screen.dart';
@@ -31,7 +31,6 @@ import 'widgets/attention_banner.dart';
 import 'widgets/prize_details_banner.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/home_header.dart';
-import 'widgets/home_search_bar.dart';
 import 'widgets/home_shortcut_strip.dart';
 import 'widgets/live_match_spotlight_card.dart';
 import 'widgets/next_match_card.dart';
@@ -239,21 +238,19 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
         Center(
           child: _LocationRow(location: location),
         ),
-        const SizedBox(height: 18),
-        const HomeSearchBar(),
-        const SizedBox(height: 16),
-        PrizeDetailsBanner(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PrizeDetailsScreen()),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         AttentionBanner(
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AttentionHubScreen()),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        PrizeDetailsBanner(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrizeDetailsScreen()),
             );
           },
         ),

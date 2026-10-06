@@ -11,6 +11,7 @@ class BankAccount {
     required this.upiId,
     required this.accent,
     required this.mark,
+    this.accountMask,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class BankAccount {
   final String upiId;
   final Color accent;
   final String mark;
+  final String? accountMask;
 
   String get maskedLast4Display {
     final digits = accountNumber.replaceAll(RegExp(r'\D'), '');
@@ -30,6 +32,7 @@ class BankAccount {
   }
 
   String get maskedMid {
+    if (accountMask != null) return accountMask!;
     final digits = accountNumber.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 6) return digits;
     return '${digits.substring(0, 5)}xxx${digits.substring(digits.length - 2)}';
@@ -39,7 +42,7 @@ class BankAccount {
 class BankAccountStore extends ChangeNotifier {
   BankAccountStore._() {
     accounts = List<BankAccount>.from(dummyBankAccounts);
-    selectedId = accounts.isEmpty ? null : accounts.first.id;
+    selectedId = accounts.isEmpty ? null : 'hdfc-1';
   }
 
   static final BankAccountStore instance = BankAccountStore._();
@@ -77,6 +80,18 @@ const dummyBankAccounts = [
     upiId: 'mayank@oksbi',
     accent: Color(0xFF2F6BFF),
     mark: 'S',
+  ),
+  BankAccount(
+    id: 'hdfc-1',
+    bankName: 'HDFC Bank',
+    shortLabel: 'HDFC',
+    ifsc: 'HDFC0001234',
+    holderName: 'Rajesh Kumar',
+    accountNumber: '0000004521',
+    upiId: 'turfenergy@okhdfcbank',
+    accent: Color(0xFF1E5BFF),
+    mark: 'H',
+    accountMask: 'HDFCxxx12',
   ),
   BankAccount(
     id: 'bob-1',

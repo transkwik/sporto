@@ -86,18 +86,11 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
+        const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: onNotificationsTap,
-          child: Container(
-            // width: 40,
-            // height: 40,
-            // decoration: BoxDecoration(
-            //   color: AppColors.glassFillLighter,
-            //   shape: BoxShape.circle,
-            //   border: Border.all(color: AppColors.glassBorder),
-            // ),
-            child: const Icon(Icons.notifications_none_rounded, color: Colors.white70, size: 20),
-          ),
+          child: const Icon(Icons.notifications_none_rounded, color: Colors.white70, size: 20),
         ),
       ],
     );

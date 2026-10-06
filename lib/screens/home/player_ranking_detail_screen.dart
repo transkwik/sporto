@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/ranking_info.dart';
-import '../profile/profile_details_screen.dart';
+import '../profile/details/profile_details_screen.dart';
 import 'widgets/ranking_detail_bits.dart';
 
 class PlayerRankingDetailScreen extends StatelessWidget {

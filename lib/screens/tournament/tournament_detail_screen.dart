@@ -23,16 +23,21 @@ String _formatDate(String? dateStr) {
 
 /// Full tournament detail screen shown when tapping a tournament
 class TournamentDetailScreen extends StatefulWidget {
-  const TournamentDetailScreen({super.key, required this.tournamentId});
+  const TournamentDetailScreen({
+    super.key,
+    required this.tournamentId,
+    this.fallbackTournament,
+  });
 
   final int tournamentId;
+  final Map<String, dynamic>? fallbackTournament;
 
   @override
   State<TournamentDetailScreen> createState() => _TournamentDetailScreenState();
 }
 
 class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
-  bool _showAllPrizes = true;
+  bool _showAllPrizes = false;
 
   @override
   void initState() {
@@ -89,7 +94,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 );
               }
 
-              final t = provider.tournamentDetail;
+              final t = provider.tournamentDetail ?? widget.fallbackTournament;
               if (t == null) {
                 return Column(
                   children: [
@@ -123,33 +128,33 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               final entryFee = t['registration_fee'] != null
                   ? '₹${t['registration_fee']}'
                   : 'Free';
-              final kickoffLabel = _formatDate(
-                t['tournament_start_at'],
-              ).split(',').first;
-
-              // Best Batsman / Best Bowler from custom fields? Right now we just set them to null as it's not in the JSON schema.
-              final String? bestBatsmanPrize = null;
-              final String? bestBowlerPrize = null;
-
-              bool isRegistrationClosed = false;
-              if (t['registration_end_at'] != null) {
+              final kickoffLabel = () {
                 try {
-                  final regEnd = DateTime.parse(t['registration_end_at']);
-                  if (regEnd.isBefore(DateTime.now())) {
-                    isRegistrationClosed = true;
-                  }
-                } catch (_) {}
-              }
+                  if (t['tournament_start_at'] == null) return 'TBD';
+                  return DateFormat('d MMM').format(DateTime.parse(t['tournament_start_at']));
+                } catch (_) {
+                  return 'TBD';
+                }
+              }();
+
+              final String? bestBatsmanPrize = t['best_batsman_prize']?.toString();
+              final String? bestBowlerPrize = t['best_bowler_prize']?.toString();
 
               final rawPrizes = t['prizes'] as List<dynamic>? ?? [];
               final visiblePrizes = _showAllPrizes
                   ? rawPrizes
                   : rawPrizes.take(3).toList();
 
-              final formatRules = [
-                'Sport Format: ${t['sport_format']?['name'] ?? 'Standard'}',
-                'Tournament Type: ${t['tournament_type']?['name'] ?? 'Standard'}',
-              ];
+              final formatRules = () {
+                final custom = t['format_rules'];
+                if (custom is List && custom.isNotEmpty) {
+                  return custom.map((e) => e.toString()).toList();
+                }
+                return [
+                  'Sport Format: ${t['sport_format']?['name'] ?? 'Standard'}',
+                  'Tournament Type: ${t['tournament_type']?['name'] ?? 'Standard'}',
+                ];
+              }();
 
               return Column(
                 children: [
@@ -283,9 +288,14 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                             rank: p['id'] ?? 1,
                             label: p['title'] ?? 'Prize',
                             amount: p['amount'] != null
-                                ? '₹${p['amount']}'
+                                ? '₹${NumberFormat('#,##,###').format(p['amount'] is num ? p['amount'] : int.tryParse(p['amount'].toString()) ?? 0)}'
                                 : '₹0',
-                            badgeColor: const Color(0xFFE9A825),
+                            badgeColor: switch (p['id'] ?? 1) {
+                              1 => const Color(0xFFE9A825),
+                              2 => const Color(0xFF8A93A3),
+                              3 => const Color(0xFFC47A3A),
+                              _ => const Color(0xFF3A4048),
+                            },
                           ),
                         if (rawPrizes.length > 3) ...[
                           const SizedBox(height: 4),
@@ -312,7 +322,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                                     Text(
                                       _showAllPrizes
                                           ? 'View Less'
-                                          : 'View More',
+                                          : 'View All Prizes',
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 12.5,
@@ -347,8 +357,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       ],
                     ),
                   ),
-                  if (!isRegistrationClosed || t['my_registration'] != null)
-                    Padding(
+                  Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                       child: GestureDetector(
                         onTap: () {
@@ -385,7 +394,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                               Text(
                                 t['my_registration'] != null
                                     ? 'View My Team'
-                                    : 'Register',
+                                    : 'Create Team',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 15.5,
@@ -422,10 +431,14 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final stage = t['tournament_type']?['name'] ?? 'Tournament';
     final dateLabel = _formatDate(t['tournament_start_at']);
-    final teamA = 'TBD';
-    final teamB = 'TBD';
+    final teamA = t['featured_team_a']?.toString() ??
+        t['team_a']?['name']?.toString() ??
+        'TBD';
+    final teamB = t['featured_team_b']?.toString() ??
+        t['team_b']?['name']?.toString() ??
+        'TBD';
     final matchPrize = t['prize_amount'] != null
-        ? '₹${t['prize_amount']}'
+        ? '₹${NumberFormat('#,##,###').format(t['prize_amount'] is num ? t['prize_amount'] : int.tryParse('${t['prize_amount']}') ?? 0)}'
         : '₹0';
     final regFee = t['registration_fee'] != null
         ? '₹${t['registration_fee']}'
@@ -470,46 +483,38 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Row(
-          //   children: [
-          //     Expanded(
-          //       child: Text(
-          //         teamA,
-          //         style: const TextStyle(
-          //           color: Colors.white,
-          //           fontSize: 15,
-          //           fontWeight: FontWeight.w700,
-          //         ),
-          //       ),
-          //     ),
-          //     const Text(
-          //       'VS',
-          //       style: TextStyle(
-          //         color: Colors.white54,
-          //         fontSize: 11,
-          //         fontWeight: FontWeight.w600,
-          //       ),
-          //     ),
-          //     Expanded(
-          //       child: Text(
-          //         teamB,
-          //         textAlign: TextAlign.right,
-          //         style: const TextStyle(
-          //           color: Colors.white,
-          //           fontSize: 15,
-          //           fontWeight: FontWeight.w700,
-          //         ),
-          //       ),
-          //     ),
-          //   ],
-          // ),
-          Text(
-            t['name'] ?? 'Unnamed Tournament',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  teamA,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Text(
+                'Vs',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  teamB,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           Container(height: 1, color: AppColors.glassBorder),

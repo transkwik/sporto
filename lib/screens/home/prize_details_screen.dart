@@ -4,8 +4,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/my_tournament_info.dart';
 import '../../models/prize_details_info.dart';
-import '../profile/my_tournament_details_screen.dart';
-import '../profile/team_history_screen.dart';
+import '../profile/tournaments/my_tournament_details_screen.dart';
+import '../profile/teams/team_history_screen.dart';
 import 'prize_calculation_screen.dart';
 import 'prize_distribution_screen.dart';
 

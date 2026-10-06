@@ -19,9 +19,16 @@ import 'widgets/remove_player_dialog.dart';
 /// Form for building out a team's squad: name, logo, and players
 /// reference design.
 class CreateTeamScreen extends StatefulWidget {
-  const CreateTeamScreen({super.key, this.initialTeamName});
+  const CreateTeamScreen({
+    super.key,
+    this.initialTeamName,
+    this.maxPlayers = 5,
+    this.tournament,
+  });
 
   final String? initialTeamName;
+  final int maxPlayers;
+  final Map<String, dynamic>? tournament;
 
   @override
   State<CreateTeamScreen> createState() => _CreateTeamScreenState();
@@ -57,13 +64,14 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       final userMap = authProvider.checkResponse?['user'] as Map<String, dynamic>?;
       final profileMap = userMap?['profile'] as Map<String, dynamic>?;
       
-      final fullName = profileMap?['full_name'] ?? userMap?['name'] ?? 'Captain';
-      final phone = userMap?['mobile_number'] ?? '';
-      
+      final fullName = profileMap?['full_name'] ?? userMap?['name'];
+      final phone = userMap?['mobile_number']?.toString() ?? '';
+      if (fullName == null || fullName.toString().trim().isEmpty) return;
+
       setState(() {
         _players.add(
           TeamPlayerInfo(
-            name: fullName,
+            name: fullName.toString(),
             phone: phone,
             isCaptain: true,
           ),
@@ -129,16 +137,24 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
 
   void _handleTeamNameChanged() => setState(() {});
 
-  void _addPlayer() {
+  void _addPlayer({bool asCaptain = false}) {
+    if (_players.length >= widget.maxPlayers) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.72),
       builder: (_) => AddPlayerSheet(
-        playerNumber: _players.length + 1,
+        playerNumber: asCaptain ? 1 : _players.length + 1,
         onSend: (name, phone) async {
-          if (_createdTeamId == null) return;
+          if (_createdTeamId == null) {
+            setState(
+              () => _players.add(
+                TeamPlayerInfo(name: name, phone: phone, isCaptain: asCaptain),
+              ),
+            );
+            return;
+          }
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -152,7 +168,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             });
             if (mounted) Navigator.pop(context); // close loader
             if (res != null && res['success'] == true) {
-              setState(() => _players.add(TeamPlayerInfo(name: name, phone: phone)));
+              setState(() => _players.add(TeamPlayerInfo(name: name, phone: phone, isCaptain: asCaptain)));
               if (mounted) {
                 MCP.showMessage(context, "Player added!", backgroundColor: Colors.green.shade600);
               }
@@ -206,22 +222,24 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       playerName: player.name,
       teamName: teamName,
     );
-    if (confirmed && _createdTeamId != null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
-      );
-      try {
-        // If we don't have the player's DB ID, we might have to fetch team players or optimism delete.
-        // For now, optimism delete if they don't have an ID, or just remove from list.
-        setState(() => _players.removeAt(index));
-        if (mounted) {
-          Navigator.pop(context); // close loader
-          MCP.showMessage(context, "Player removed", backgroundColor: Colors.green.shade600);
+    if (confirmed) {
+      if (_createdTeamId != null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+        );
+        try {
+          setState(() => _players.removeAt(index));
+          if (mounted) {
+            Navigator.pop(context);
+            MCP.showMessage(context, "Player removed", backgroundColor: Colors.green.shade600);
+          }
+        } catch (e) {
+          if (mounted) Navigator.pop(context);
         }
-      } catch (e) {
-        if (mounted) Navigator.pop(context);
+      } else {
+        setState(() => _players.removeAt(index));
       }
     }
   }
@@ -274,6 +292,22 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     }
   }
 
+  Future<void> _handleSaveTeam() async {
+    if (_players.length < widget.maxPlayers) return;
+    if (_createdTeamId != null) {
+      _finishFlow();
+      return;
+    }
+    await _handleCreateTeam();
+    if (_createdTeamId != null) {
+      _finishFlow();
+    } else if (mounted) {
+      _finishFlow();
+    }
+  }
+
+  bool get _isSquadFull => _players.length >= widget.maxPlayers;
+
   void _finishFlow() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => TeamCreatedScreen(players: _players)),
@@ -321,9 +355,17 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                   children: [
-                    const SizedBox(height: 18),
                     Text(
-                      'Build your team. Play together.',
+                      '${widget.maxPlayers} Players Per Team',
+                      style: GoogleFonts.quicksand(
+                        color: AppColors.mintGreen,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Build your team Play together.',
                       style: GoogleFonts.quicksand(
                         color: Colors.white54,
                         fontSize: 14.5,
@@ -419,8 +461,38 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                       } : () {},
                     ),
                     const SizedBox(height: 26),
-                    if (_createdTeamId != null) ...[
-                      for (var i = 0; i < _players.length; i++) ...[
+                    Text(
+                      'Captain',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white60,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        if (_players.any((p) => p.isCaptain)) return;
+                        _addPlayer(asCaptain: true);
+                      },
+                      child: Container(
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFC45AD4).withValues(alpha: 0.7)),
+                        ),
+                        child: Text(
+                          '+ Add Captain',
+                          style: GoogleFonts.quicksand(
+                            color: const Color(0xFFC45AD4),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (var i = 0; i < _players.length; i++) ...[
                       Row(
                         children: [
                           Text(
@@ -433,34 +505,28 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          if (_players[i].isCaptain) ...[
-                            const SizedBox(width: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.mintGreen.withValues(
-                                  alpha: 0.16,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppColors.mintGreen.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                'Active',
-                                style: GoogleFonts.quicksand(
-                                  color: AppColors.mintGreen,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.mintGreen.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.mintGreen.withValues(alpha: 0.4),
                               ),
                             ),
-                          ],
+                            child: Text(
+                              'Active',
+                              style: GoogleFonts.quicksand(
+                                color: AppColors.mintGreen,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 10),
@@ -473,81 +539,100 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     ],
                     Row(
                       children: [
+                        if (_isSquadFull) ...[
+                          const Icon(Icons.check_rounded, color: AppColors.mintGreen, size: 16),
+                          const SizedBox(width: 4),
+                        ],
                         Text(
-                          '${_players.length} Players',
+                          '${_players.length}/${widget.maxPlayers}',
                           style: GoogleFonts.quicksand(
                             color: Colors.white54,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: _addPlayer,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 08,
-                            ),
+                        if (_isSquadFull) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.primaryLight.withValues(
-                                  alpha: 0.6,
-                                ),
+                              color: AppColors.mintGreen.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.4)),
+                            ),
+                            child: Text(
+                              'Team Completed',
+                              style: GoogleFonts.quicksand(
+                                color: AppColors.mintGreen,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_rounded,
-                                  color: AppColors.primaryLight,
-                                  size: 16,
+                          ),
+                        ],
+                        const Spacer(),
+                        if (!_isSquadFull)
+                          GestureDetector(
+                            onTap: _addPlayer,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 08,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primaryLight.withValues(alpha: 0.6),
                                 ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Add New Player',
-                                  style: GoogleFonts.quicksand(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_rounded,
                                     color: AppColors.primaryLight,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
+                                    size: 16,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Add New Player',
+                                    style: GoogleFonts.quicksand(
+                                      color: AppColors.primaryLight,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
-                    ],
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: GestureDetector(
-                  onTap: _createdTeamId == null
-                      ? (_isTeamReady ? _handleCreateTeam : null)
-                      : _finishFlow,
+                  onTap: _isSquadFull && _isTeamReady ? _handleSaveTeam : null,
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     width: double.infinity,
                     height: 54,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      gradient: (_createdTeamId != null || _isTeamReady)
+                      gradient: (_isSquadFull && _isTeamReady)
                           ? AppColors.bannerGradient
                           : null,
-                      color: (_createdTeamId != null || _isTeamReady)
+                      color: (_isSquadFull && _isTeamReady)
                           ? null
                           : AppColors.glassFillLighter,
                       borderRadius: BorderRadius.circular(16),
-                      border: (_createdTeamId != null || _isTeamReady)
+                      border: (_isSquadFull && _isTeamReady)
                           ? null
                           : Border.all(color: AppColors.glassBorder),
-                      boxShadow: (_createdTeamId != null || _isTeamReady)
+                      boxShadow: (_isSquadFull && _isTeamReady)
                           ? [
                               BoxShadow(
                                 color: const Color(0xFFFF7A1E).withValues(alpha: 0.4),
@@ -558,9 +643,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                           : null,
                     ),
                     child: Text(
-                      _createdTeamId == null ? 'Create Team' : 'Finish & View Team',
+                      'Save Team',
                       style: GoogleFonts.quicksand(
-                        color: (_createdTeamId != null || _isTeamReady)
+                        color: (_isSquadFull && _isTeamReady)
                             ? Colors.white
                             : Colors.white38,
                         fontSize: 15.5,

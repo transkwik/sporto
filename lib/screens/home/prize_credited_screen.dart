@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/prize_details_info.dart';
-import '../profile/wallet_transactions_screen.dart';
+import '../profile/wallet/wallet_transactions_screen.dart';
 import 'prize_details_screen.dart';
 
 /// Prize Distribution → See Your Credit.

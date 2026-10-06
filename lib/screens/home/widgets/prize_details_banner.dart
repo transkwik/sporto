@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/prize_details_info.dart';
 
@@ -10,138 +11,156 @@ class PrizeDetailsBanner extends StatelessWidget {
   final VoidCallback? onTap;
   final PrizeDetailsInfo details;
 
+  static const _gold = Color(0xFFE3A93D);
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1C1608), Color(0xFF2A220C), Color(0xFF1A1408)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFF3AD7E8).withValues(alpha: 0.45)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3AD7E8).withValues(alpha: 0.18),
+              blurRadius: 16,
+              spreadRadius: 0.5,
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF5A4A18).withValues(alpha: 0.7)),
-          ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(21),
           child: Stack(
             children: [
-              Positioned(
-                right: -8,
-                top: 8,
-                bottom: 8,
-                child: Icon(
-                  Icons.emoji_events_rounded,
-                  size: 120,
-                  color: const Color(0xFFE3A93D).withValues(alpha: 0.18),
+              Positioned.fill(
+                child: Image.asset(
+                  AppAssets.prizeBackground,
+                  fit: BoxFit.cover,
+                  alignment: const Alignment(0.55, 0),
+                ),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF071018),
+                        const Color(0xF2081420),
+                        const Color(0x990A1828),
+                        Colors.black.withValues(alpha: 0.15),
+                      ],
+                      stops: const [0, 0.38, 0.58, 1],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.emoji_events_rounded, color: Color(0xFFE3A93D), size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'TOURNAMENT COMPLETED!',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.abrilFatface(
-                              color: const Color(0xFFE3A93D),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              // letterSpacing: 0.6,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.emoji_events_rounded, color: _gold, size: 14),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Tournament Completed!',
+                            style: GoogleFonts.quicksand(
+                              color: _gold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      details.tournamentTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.abrilFatface(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1.15,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text.rich(
-                      TextSpan(
-                        style: GoogleFonts.quicksand(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
-                        ),
-                        children: [
-                          const TextSpan(text: 'Your team '),
-                          TextSpan(
-                            text: details.winningTeamName,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          const TextSpan(text: ' has won the tournament!'),
                         ],
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Your prize is being processed.',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 14.5),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 72),
+                      child: Text(
+                        details.tournamentTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 72),
+                      child: Text.rich(
+                        TextSpan(
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.25,
+                          ),
+                          children: [
+                            const TextSpan(text: 'Your team '),
+                            TextSpan(
+                              text: details.winningTeamName,
+                              style: GoogleFonts.quicksand(
+                                color: _gold,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                height: 1.25,
+                              ),
+                            ),
+                            const TextSpan(text: ' has won the tournament!'),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.infoBlue),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.circle, size: 8, color: AppColors.infoBlue),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Processing',
-                                style: GoogleFonts.quicksand(
-                                  color: AppColors.infoBlue,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Flexible(
+                        const Icon(Icons.schedule_rounded, color: Colors.white70, size: 14),
+                        const SizedBox(width: 5),
+                        Expanded(
                           child: Text(
-                            'View Prize Details',
+                            'Your prize is being processed.',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
                             style: GoogleFonts.quicksand(
-                              color: const Color(0xFFE3A93D),
-                              fontSize: 14.5,
+                              color: Colors.white70,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.infoBlue,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            'Prize Details  >',
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: Color(0xFFE3A93D), size: 20),
                       ],
                     ),
                   ],

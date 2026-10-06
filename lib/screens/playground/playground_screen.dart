@@ -16,7 +16,7 @@ import 'widgets/playground_filter_chip.dart';
 import 'widgets/playground_header.dart';
 import 'widgets/playground_player_card.dart';
 import 'widgets/playground_team_card.dart';
-import '../profile/notifications_screen.dart';
+import '../profile/notifications/notifications_screen.dart';
 
 /// Playground tab: discover teams looking for players and players available
 /// nearby, plus quick actions for creating/joining a team.

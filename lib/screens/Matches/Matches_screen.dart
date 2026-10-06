@@ -10,7 +10,7 @@ import '../home/widgets/sport_icon_button.dart';
 import 'lmatch_detail_screen.dart';
 import 'completed_match_detail_screen.dart';
 import '../../models/completed_match_detail_info.dart';
-import '../profile/notifications_screen.dart';
+import '../profile/notifications/notifications_screen.dart';
 import 'widgets/match_feed_card.dart';
 import 'widgets/match_feed_tabs.dart';
 

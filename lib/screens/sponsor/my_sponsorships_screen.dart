@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/sponsor_info.dart';
-import '../profile/withdraw_to_bank_screen.dart';
+import '../profile/bank/withdraw_to_bank_screen.dart';
 import 'my_sponsor_details_screen.dart';
 import 'sponsor_format.dart';
 

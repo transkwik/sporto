@@ -33,7 +33,7 @@ class TeamCreatedScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: Row(
                   children: [
-                    GlassBackButton(onTap: () => Navigator.of(context).popUntil((route) => route.isFirst)),
+                    GlassBackButton(onTap: () => Navigator.of(context).pop()),
                   ],
                 ),
               ),
@@ -55,7 +55,7 @@ class TeamCreatedScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  onTap: () => Navigator.of(context).pop(),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     width: double.infinity,

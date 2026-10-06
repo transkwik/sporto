@@ -3,14 +3,15 @@ import 'package:provider/provider.dart';
 import '../../models/profile_info.dart';
 import '../../routes/app_routes.dart';
 import '../auth/providers/auth_provider.dart';
-import 'profile_details_screen.dart';
-import 'settings_screen.dart';
-import 'notifications_screen.dart';
-import 'my_achievements_screen.dart';
-import 'my_awards_screen.dart';
-import 'my_prizes_screen.dart';
-import 'my_fan_tips_screen.dart';
-import 'wallet_transactions_screen.dart';
+import 'details/profile_details_screen.dart';
+import 'settings/settings_screen.dart';
+import 'notifications/notifications_screen.dart';
+import 'achievements/my_achievements_screen.dart';
+import 'awards/my_awards_screen.dart';
+import 'prizes/my_prizes_screen.dart';
+import 'fan_tips/my_fan_tips_screen.dart';
+import 'wallet/wallet_transactions_screen.dart';
+import 'bank/bank_account_screen.dart';
 import '../sponsor/my_sponsorships_screen.dart';
 import 'widgets/championship_journey_card.dart';
 import 'widgets/profile_header.dart';
@@ -70,6 +71,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'Wallet & Transactions':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+        );
+      case 'Bank Account':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const BankAccountScreen()),
         );
       case 'Notifications':
         Navigator.of(

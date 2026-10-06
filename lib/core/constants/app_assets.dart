@@ -9,4 +9,5 @@ class AppAssets {
 
   static const String logo = '$_imagesPath/logo.png';
   static const String sportoLogo = '$_imagesPath/sporto_logo.png';
+  static const String prizeBackground = '$_imagesPath/background_prize.jpg';
 }

@@ -13,6 +13,7 @@ class TeamCard extends StatelessWidget {
     required this.selected,
     required this.onSelect,
     required this.requiredPlayers,
+    this.isComplete = true,
     this.onAddPlayers,
     this.onEdit,
     this.onDelete,
@@ -22,6 +23,7 @@ class TeamCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onSelect;
   final int requiredPlayers;
+  final bool isComplete;
   final VoidCallback? onAddPlayers;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -55,7 +57,14 @@ class TeamCard extends StatelessWidget {
     if (dateStr == null) return 'Unknown';
     try {
       final date = DateTime.parse(dateStr);
-      return DateFormat('MMM dd, yyyy').format(date);
+      final diff = DateTime.now().difference(date);
+      if (diff.inHours > 0 && diff.inHours < 24) {
+        return 'Updated ${diff.inHours} hours ago';
+      }
+      if (diff.inMinutes >= 0 && diff.inMinutes < 60) {
+        return 'Updated ${diff.inMinutes} minutes ago';
+      }
+      return 'Updated ${DateFormat('MMM dd, yyyy').format(date)}';
     } catch (_) {
       return 'Unknown';
     }
@@ -73,10 +82,10 @@ class TeamCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: selected ? AppColors.liveCardGradient : null,
-        color: selected ? null : AppColors.glassFillLighter,
+        gradient: selected && isComplete ? AppColors.liveCardGradient : null,
+        color: selected && isComplete ? null : AppColors.glassFillLighter,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: selected ? Colors.transparent : AppColors.glassBorder),
+        border: Border.all(color: selected && isComplete ? Colors.transparent : AppColors.glassBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,25 +175,9 @@ class TeamCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              if (playersCount < requiredPlayers)
-                GestureDetector(
-                  onTap: onAddPlayers,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.roseTag,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Add Team Players',
-                      style: GoogleFonts.quicksand(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                )
-              else
-                Text('Updated $updatedLabel', style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5)),
+              Text(updatedLabel, style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5)),
               const Spacer(),
-              _SelectionPill(selected: selected, onTap: onSelect),
+              _SelectionPill(selected: selected, isComplete: isComplete, onTap: isComplete ? onSelect : (onAddPlayers ?? onSelect)),
             ],
           ),
         ],
@@ -194,9 +187,10 @@ class TeamCard extends StatelessWidget {
 }
 
 class _SelectionPill extends StatelessWidget {
-  const _SelectionPill({required this.selected, required this.onTap});
+  const _SelectionPill({required this.selected, required this.isComplete, required this.onTap});
 
   final bool selected;
+  final bool isComplete;
   final VoidCallback onTap;
 
   @override
@@ -206,17 +200,19 @@ class _SelectionPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.glassFillLight,
+          color: selected && isComplete ? AppColors.primary : AppColors.glassFillLight,
           borderRadius: BorderRadius.circular(10),
-          border: selected ? null : Border.all(color: AppColors.glassBorderStrong),
+          border: selected && isComplete ? null : Border.all(color: AppColors.glassBorderStrong),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (selected) const Icon(Icons.check_rounded, color: Colors.white, size: 15),
-            if (selected) const SizedBox(width: 4),
+            if (selected && isComplete) const Icon(Icons.check_rounded, color: Colors.white, size: 15),
+            if (selected && isComplete) const SizedBox(width: 4),
             Text(
-              selected ? 'Selected' : 'Select Team',
+              !isComplete
+                  ? 'Complete Team'
+                  : (selected ? 'Selected' : 'Select Team'),
               style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
             ),
           ],
