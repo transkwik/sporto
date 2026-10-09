@@ -11,6 +11,7 @@ class HomeShortcutStrip extends StatelessWidget {
     required this.onStats,
     required this.onCelebrate,
     required this.onSponsors,
+    required this.onReferees,
   });
 
   final VoidCallback onTeamUp;
@@ -19,6 +20,7 @@ class HomeShortcutStrip extends StatelessWidget {
   final VoidCallback onStats;
   final VoidCallback onCelebrate;
   final VoidCallback onSponsors;
+  final VoidCallback onReferees;
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +31,9 @@ class HomeShortcutStrip extends StatelessWidget {
       (Icons.sports_cricket_rounded, 'Stats', 'Form & Rank'),
       (Icons.celebration_rounded, 'Celebrate', 'Fan Support'),
       (Icons.workspace_premium_rounded, 'Sponsors', 'Fund a Prize'),
+      (Icons.sports_rounded, 'Referees', 'Book Officials'),
     ];
-    final actions = [onTeamUp, onVenues, onWallet, onStats, onCelebrate, onSponsors];
+    final actions = [onTeamUp, onVenues, onWallet, onStats, onCelebrate, onSponsors, onReferees];
 
     return SizedBox(
       height: 142,

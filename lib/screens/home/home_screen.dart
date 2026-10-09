@@ -19,6 +19,7 @@ import '../profile/profile_screen.dart';
 import '../profile/notifications/notifications_screen.dart';
 import '../celebrate/celebrate_screen.dart';
 import '../sponsor/sponsor_screen.dart';
+import '../referees/referee_hub_screen.dart';
 import '../profile/wallet/wallet_transactions_screen.dart';
 import '../../routes/app_routes.dart';
 import 'attention_hub_screen.dart';
@@ -455,6 +456,11 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
           onSponsors: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SponsorScreen()),
+            );
+          },
+          onReferees: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RefereeHubScreen()),
             );
           },
         ),
