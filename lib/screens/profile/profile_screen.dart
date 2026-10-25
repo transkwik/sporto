@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sporto/screens/profile/my_statastics/my_statastics.dart';
 import '../../models/profile_info.dart';
 import '../../routes/app_routes.dart';
 import '../auth/providers/auth_provider.dart';
@@ -49,33 +50,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'All Tournaments':
         Navigator.of(context).pushNamed(AppRoutes.allTournaments);
       case 'My Sponsorships':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => MySponsorshipsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => MySponsorshipsScreen()));
       case 'Achievements':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyAchievementsScreen()));
       case 'My Awards':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyAwardsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyAwardsScreen()));
       case 'My Prizes':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyPrizesScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyPrizesScreen()));
       case 'My Fan Tips':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyFanTipsScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyFanTipsScreen()));
+      case 'My Statistics':
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyStatastcs()));
       case 'Wallet & Transactions':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
         );
       case 'Bank Account':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const BankAccountScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const BankAccountScreen()));
       case 'Notifications':
         Navigator.of(
           context,
@@ -86,23 +91,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
       case 'Logout':
         final provider = context.read<AuthProvider>();
-        
+
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => const Center(child: CircularProgressIndicator()),
         );
-        
+
         final success = await provider.logout();
-        
+
         if (!mounted) return;
         Navigator.of(context).pop(); // remove dialog
-        
+
         if (success) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRoutes.login,
-            (route) => false,
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(provider.errorMessage ?? 'Logout failed')),
@@ -116,8 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = context.watch<AuthProvider>();
     final userMap =
         authProvider.checkResponse?['user'] as Map<String, dynamic>?;
-    final profileMap =
-        userMap?['profile'] as Map<String, dynamic>?;
+    final profileMap = userMap?['profile'] as Map<String, dynamic>?;
 
     final String fullName = profileMap?['full_name'] ?? 'Unknown User';
     final String userId = userMap?['id']?.toString() ?? 'N/A';

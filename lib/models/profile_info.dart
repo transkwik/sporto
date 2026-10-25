@@ -3,7 +3,12 @@ import '../core/constants/app_colors.dart';
 
 /// Static design-time model for a single stat tile on the profile screen.
 class ProfileStat {
-  const ProfileStat({required this.icon, required this.iconColor, required this.value, required this.label});
+  const ProfileStat({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.label,
+  });
 
   final IconData icon;
   final Color iconColor;
@@ -28,7 +33,11 @@ class ProfileMenuItem {
 
 /// Static design-time model for a sport + role pill on the profile details page.
 class ProfileSportRole {
-  const ProfileSportRole({required this.icon, required this.sport, required this.role});
+  const ProfileSportRole({
+    required this.icon,
+    required this.sport,
+    required this.role,
+  });
 
   final IconData icon;
   final String sport;
@@ -70,22 +79,70 @@ const List<(IconData icon, String label)> dummyProfileSports = [
 ];
 
 const List<ProfileStat> dummyProfileStats = [
-  ProfileStat(icon: Icons.sports_cricket_rounded, iconColor: Colors.white70, value: '12', label: 'Matches'),
-  ProfileStat(icon: Icons.emoji_events_rounded, iconColor: AppColors.amberAccent, value: '12', label: 'Wins'),
-  ProfileStat(icon: Icons.emoji_events_rounded, iconColor: AppColors.amberAccent, value: '12', label: 'Titles'),
-  ProfileStat(icon: Icons.track_changes_rounded, iconColor: Color(0xFFFF7A5C), value: '12', label: 'MVP'),
+  ProfileStat(
+    icon: Icons.sports_cricket_rounded,
+    iconColor: Colors.white70,
+    value: '12',
+    label: 'Matches',
+  ),
+  ProfileStat(
+    icon: Icons.emoji_events_rounded,
+    iconColor: AppColors.amberAccent,
+    value: '12',
+    label: 'Wins',
+  ),
+  ProfileStat(
+    icon: Icons.emoji_events_rounded,
+    iconColor: AppColors.amberAccent,
+    value: '12',
+    label: 'Titles',
+  ),
+  ProfileStat(
+    icon: Icons.track_changes_rounded,
+    iconColor: Color(0xFFFF7A5C),
+    value: '12',
+    label: 'MVP',
+  ),
 ];
 
 const List<ProfileStat> dummyProfileDetailStats = [
-  ProfileStat(icon: Icons.sports_cricket_rounded, iconColor: Colors.white70, value: '34', label: 'MATCHES'),
-  ProfileStat(icon: Icons.emoji_events_rounded, iconColor: AppColors.amberAccent, value: '24', label: 'WINS'),
-  ProfileStat(icon: Icons.emoji_events_rounded, iconColor: AppColors.amberAccent, value: '3', label: 'TITLES'),
-  ProfileStat(icon: Icons.track_changes_rounded, iconColor: Color(0xFFFF7A5C), value: '4', label: 'MVPS'),
+  ProfileStat(
+    icon: Icons.sports_cricket_rounded,
+    iconColor: Colors.white70,
+    value: '34',
+    label: 'MATCHES',
+  ),
+  ProfileStat(
+    icon: Icons.emoji_events_rounded,
+    iconColor: AppColors.amberAccent,
+    value: '24',
+    label: 'WINS',
+  ),
+  ProfileStat(
+    icon: Icons.emoji_events_rounded,
+    iconColor: AppColors.amberAccent,
+    value: '3',
+    label: 'TITLES',
+  ),
+  ProfileStat(
+    icon: Icons.track_changes_rounded,
+    iconColor: Color(0xFFFF7A5C),
+    value: '4',
+    label: 'MVPS',
+  ),
 ];
 
 const List<ProfileSportRole> dummyProfileSportRoles = [
-  ProfileSportRole(icon: Icons.sports_cricket_rounded, sport: 'CRICKET', role: 'ALL-ROUNDER'),
-  ProfileSportRole(icon: Icons.sports_soccer_rounded, sport: 'FOOTBALL', role: 'FORWARD'),
+  ProfileSportRole(
+    icon: Icons.sports_cricket_rounded,
+    sport: 'CRICKET',
+    role: 'ALL-ROUNDER',
+  ),
+  ProfileSportRole(
+    icon: Icons.sports_soccer_rounded,
+    sport: 'FOOTBALL',
+    role: 'FORWARD',
+  ),
 ];
 
 const List<ProfileMenuItem> dummyProfileMainMenu = [
@@ -117,6 +174,12 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
     icon: Icons.favorite_rounded,
     iconColor: Color(0xFFE85A6B),
     label: 'My Sponsorships',
+    subtitle: '3 transactions',
+  ),
+  ProfileMenuItem(
+    icon: Icons.bar_chart_rounded,
+    iconColor: Color(0xFFE85A6B),
+    label: 'My Statistics',
     subtitle: '3 transactions',
   ),
   ProfileMenuItem(
@@ -173,8 +236,24 @@ const List<ProfileMenuItem> dummyProfileMainMenu = [
 ];
 
 const List<ProfileMenuItem> dummyProfileSupportMenu = [
-  ProfileMenuItem(icon: Icons.info_outline_rounded, iconColor: Colors.white54, label: 'About Sporto'),
-  ProfileMenuItem(icon: Icons.error_outline_rounded, iconColor: Colors.white54, label: 'Terms & Condition'),
-  ProfileMenuItem(icon: Icons.privacy_tip_outlined, iconColor: Colors.white54, label: 'Privacy Policy'),
-  ProfileMenuItem(icon: Icons.headset_mic_outlined, iconColor: Colors.white54, label: 'Help Center'),
+  ProfileMenuItem(
+    icon: Icons.info_outline_rounded,
+    iconColor: Colors.white54,
+    label: 'About Sporto',
+  ),
+  ProfileMenuItem(
+    icon: Icons.error_outline_rounded,
+    iconColor: Colors.white54,
+    label: 'Terms & Condition',
+  ),
+  ProfileMenuItem(
+    icon: Icons.privacy_tip_outlined,
+    iconColor: Colors.white54,
+    label: 'Privacy Policy',
+  ),
+  ProfileMenuItem(
+    icon: Icons.headset_mic_outlined,
+    iconColor: Colors.white54,
+    label: 'Help Center',
+  ),
 ];

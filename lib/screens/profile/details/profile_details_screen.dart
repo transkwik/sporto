@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+// import 'package:sporto/screens/profile/my_statastics/my_statastics.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/glass_back_button.dart';
 import '../../../models/profile_info.dart';
 import '../../../routes/app_routes.dart';
+import '../my_statastics/my_statastics.dart';
 import '../widgets/championship_journey_card.dart';
 import '../widgets/profile_detail_stats_row.dart';
 import '../widgets/profile_id_card.dart';
@@ -27,7 +29,9 @@ class ProfileDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -40,13 +44,19 @@ class ProfileDetailsScreen extends StatelessWidget {
                     const Expanded(
                       child: Text(
                         'Profile',
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsScreen(),
+                          ),
                         );
                       },
                       child: Container(
@@ -58,7 +68,11 @@ class ProfileDetailsScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: AppColors.glassBorder),
                         ),
-                        child: const Icon(Icons.settings_rounded, color: Colors.white70, size: 20),
+                        child: const Icon(
+                          Icons.settings_rounded,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -78,7 +92,9 @@ class ProfileDetailsScreen extends StatelessWidget {
                       compact: false,
                       onView: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const MyAchievementsScreen(),
+                          ),
                         );
                       },
                     ),
@@ -89,28 +105,51 @@ class ProfileDetailsScreen extends StatelessWidget {
                         onTap: () {
                           switch (item.label) {
                             case 'My Sports':
-                              Navigator.of(context).pushNamed(AppRoutes.mySports);
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.mySports);
                             case 'My Teams':
-                              Navigator.of(context).pushNamed(AppRoutes.myTeams);
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.myTeams);
                             case 'My Tournaments':
-                              Navigator.of(context).pushNamed(AppRoutes.myTournaments);
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.myTournaments);
                             case 'All Tournaments':
-                              Navigator.of(context).pushNamed(AppRoutes.allTournaments);
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.allTournaments);
                             case 'Achievements':
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const MyAchievementsScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const MyAchievementsScreen(),
+                                ),
                               );
                             case 'My Awards':
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const MyAwardsScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const MyAwardsScreen(),
+                                ),
                               );
                             case 'My Fan Tips':
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const MyFanTipsScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const MyFanTipsScreen(),
+                                ),
+                              );
+                            case 'My Statistics':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const MyStatastcs(),
+                                ),
                               );
                             case 'Wallet & Transactions':
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const WalletTransactionsScreen(),
+                                ),
                               );
                             case 'Notifications':
                               Navigator.of(context).push(
@@ -120,7 +159,9 @@ class ProfileDetailsScreen extends StatelessWidget {
                               );
                             case 'Settings':
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen(),
+                                ),
                               );
                           }
                         },
