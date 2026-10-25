@@ -235,9 +235,6 @@ class _SplashScreenState extends State<SplashScreen>
       // ❌ INVALID RESPONSE (user null / error)
       log("Invalid check response");
 
-      // 🔥 Clear bad token (important fix)
-      storage.remove('authToken');
-
       Get.offAll(() => LoginScreen());
 
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -248,9 +245,6 @@ class _SplashScreenState extends State<SplashScreen>
       });
     } catch (e) {
       log("Navigation error: $e");
-
-      // 🔥 Clear token on error
-      storage.remove('authToken');
 
       Get.offAll(() => LoginScreen());
 

@@ -1,3 +1,5 @@
+import 'match_data_parser.dart';
+
 /// Data for the completed-match details screen. Filled from the matches API
 /// map when present, with design fallbacks for summary fields.
 class CompletedMatchDetailInfo {
@@ -46,9 +48,10 @@ class CompletedMatchDetailInfo {
 
   factory CompletedMatchDetailInfo.fromMatchData(Map<String, dynamic> matchData) {
     final match = matchData['match'];
-    final teams = matchData['teams'] as List<dynamic>? ?? [];
-    final teamA = teams.isNotEmpty ? (teams[0]['name']?.toString() ?? 'Team A') : 'Team A';
-    final teamB = teams.length > 1 ? (teams[1]['name']?.toString() ?? 'Team B') : 'Team B';
+    final teamA = MatchDataParser.team(matchData, isA: true);
+    final teamB = MatchDataParser.team(matchData, isA: false);
+    final scoreA = MatchDataParser.score(matchData, teamA.id);
+    final scoreB = MatchDataParser.score(matchData, teamB.id);
     final title = matchData['tournament']?['name']?.toString() ??
         matchData['format']?['name']?.toString() ??
         'Tournament';
@@ -56,11 +59,9 @@ class CompletedMatchDetailInfo {
         matchData['ground']?.toString() ??
         match?['venue']?.toString() ??
         'Ground A';
-    final winner = match?['winner']?['name']?.toString() ??
-        matchData['winner']?['name']?.toString() ??
-        match?['winner']?.toString() ??
-        matchData['winner']?.toString() ??
-        teamA;
+    final dateShort = MatchDataParser.dateShort(matchData);
+    final timeLabel = MatchDataParser.clock(matchData);
+    final dateFull = MatchDataParser.dateFull(matchData);
 
     return CompletedMatchDetailInfo(
       tournamentName: title,
@@ -68,35 +69,26 @@ class CompletedMatchDetailInfo {
           matchData['location']?.toString() ??
           match?['city']?.toString() ??
           'Hyderabad',
-      dateShort: match?['date_label']?.toString() ??
-          matchData['date_label']?.toString() ??
-          '8 Aug Today',
-      timeLabel: match?['start_time']?.toString() ??
-          match?['time']?.toString() ??
-          matchData['time']?.toString() ??
-          '10:30 AM',
+      dateShort: dateShort.isNotEmpty ? dateShort : '8 Aug Today',
+      timeLabel: timeLabel.isNotEmpty ? timeLabel : '10:30 AM',
       roundLabel: matchData['round']?['name']?.toString() ??
-          matchData['stage']?.toString() ??
+          matchData['stage']?['name']?.toString() ??
           'Round of 128',
       sport: matchData['sport']?['name']?.toString() ?? 'Cricket',
       venue: venue,
-      battingTeam: teamA,
-      bowlingTeam: teamB,
-      battingScore: match?['score_a']?.toString() ??
-          match?['scoreA']?.toString() ??
-          (teams.isNotEmpty ? teams[0]['score']?.toString() : null) ??
-          '28/1',
-      bowlingScore: match?['score_b']?.toString() ??
-          match?['scoreB']?.toString() ??
-          (teams.length > 1 ? teams[1]['score']?.toString() : null) ??
-          '31/2',
-      winnerName: winner,
+      battingTeam: teamA.name,
+      bowlingTeam: teamB.name,
+      battingScore: scoreA.hasData && scoreA.overs.isNotEmpty
+          ? '${scoreA.score} (${scoreA.overs})'
+          : scoreA.score,
+      bowlingScore: scoreB.hasData && scoreB.overs.isNotEmpty
+          ? '${scoreB.score} (${scoreB.overs})'
+          : scoreB.score,
+      winnerName: MatchDataParser.winnerName(matchData),
       playerOfTheMatch: match?['player_of_match']?.toString() ??
           matchData['player_of_match']?.toString() ??
           'Sandeep Rao',
-      dateFull: match?['date']?.toString() ??
-          matchData['date']?.toString() ??
-          'Aug 08, 2026',
+      dateFull: dateFull.isNotEmpty ? dateFull : 'Aug 08, 2026',
       referee: match?['referee']?.toString() ??
           matchData['referee']?.toString() ??
           'Amit Verma',

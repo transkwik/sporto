@@ -7,6 +7,7 @@ import '../auth/providers/location_provider.dart';
 import '../home/providers/home_provider.dart';
 import '../home/widgets/home_search_bar.dart';
 import '../team/create_team_screen.dart';
+import '../team/playground_create_team_screen.dart';
 import '../team/team_detail_screen.dart';
 import 'join_team_list_screen.dart';
 import 'find_player_screen.dart';
@@ -38,7 +39,8 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<HomeProvider>();
       provider.fetchSports();
-      if (!provider.isFetchingAvailableTeams && provider.availableTeamsList.isEmpty) {
+      if (!provider.isFetchingAvailableTeams &&
+          provider.availableTeamsList.isEmpty) {
         _fetchAvailableTeams(isRefresh: true);
       }
     });
@@ -51,9 +53,11 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       final provider = context.read<HomeProvider>();
-      if (!provider.isFetchingAvailableTeams && !provider.isFetchingMoreAvailableTeams) {
+      if (!provider.isFetchingAvailableTeams &&
+          !provider.isFetchingMoreAvailableTeams) {
         _fetchAvailableTeams(isRefresh: false);
       }
     }
@@ -132,159 +136,174 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
     final isLoading = homeProvider.isFetchingAvailableTeams;
     final filteredTeams = _getFilteredTeams(homeProvider);
 
-    return ListView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      children: [
-        PlaygroundHeader(
-          location: 'Kondapur, Hyderabad',
-          walletBalance: '₹ 500',
-          onLocationTap: () {},
-          onAddFunds: () {},
-          onNotificationsTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            );
-          },
-        ),
-        const SizedBox(height: 18),
-        const HomeSearchBar(
-          hintText: 'Search players, teams or tournaments...',
-        ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(
-              child: PlaygroundActionButton(
-                icon: Icons.add_rounded,
-                label: 'Create Team',
-                isPrimary: true,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CreateTeamScreen()),
-                ),
-              ),
-            ),
-            Expanded(
-              child: PlaygroundActionButton(
-                icon: Icons.group_add_rounded,
-                label: 'Join Team',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const JoinTeamListScreen()),
-                ),
-              ),
-            ),
-            Expanded(
-              child: PlaygroundActionButton(
-                icon: Icons.groups_rounded,
-                label: 'My Team',
-                onTap: () => Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const MyTeamScreen())),
-              ),
-            ),
-            Expanded(
-              child: PlaygroundActionButton(
-                icon: Icons.person_search_rounded,
-                label: 'Find Player',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const FindPlayerScreen()),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 22),
-        SizedBox(
-          height: 38,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
+    return RefreshIndicator(
+      onRefresh: () async => _fetchAvailableTeams(isRefresh: true),
+      color: AppColors.mintGreen,
+      backgroundColor: const Color(0xFF161A24),
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        children: [
+          PlaygroundHeader(
+            location: 'Kondapur, Hyderabad',
+            walletBalance: '₹ 500',
+            onLocationTap: () {},
+            onAddFunds: () {},
+            onNotificationsTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+          const HomeSearchBar(
+            hintText: 'Search players, teams or tournaments...',
+          ),
+          const SizedBox(height: 22),
+          Row(
             children: [
-              PlaygroundFilterChip(
-                label: 'All',
-                selected: _selectedFilter == 0,
-                onTap: () {
-                  setState(() => _selectedFilter = 0);
-                  _fetchAvailableTeams(isRefresh: true);
-                },
+              Expanded(
+                child: PlaygroundActionButton(
+                  icon: Icons.add_rounded,
+                  label: 'Create Team',
+                  isPrimary: true,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PlaygroundCreateTeamScreen()),
+                  ).then((_) {
+                    if (mounted) {
+                      _fetchAvailableTeams(isRefresh: true);
+                    }
+                  }),
+                ),
               ),
-              if (homeProvider.isFetchingSports)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(color: AppColors.mintGreen, strokeWidth: 2),
+              Expanded(
+                child: PlaygroundActionButton(
+                  icon: Icons.group_add_rounded,
+                  label: 'Join Team',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const JoinTeamListScreen(),
                     ),
                   ),
-                )
-              else
-                for (var i = 0; i < homeProvider.sportsList.length; i++) ...[
-                  const SizedBox(width: 10),
-                  PlaygroundFilterChip(
-                    label: homeProvider.sportsList[i]['name'] ?? '',
-                    icon: Icons.sports_rounded,
-                    selected: _selectedFilter == i + 1,
-                    onTap: () {
-                      setState(() => _selectedFilter = i + 1);
-                      _fetchAvailableTeams(isRefresh: true);
-                    },
+                ),
+              ),
+              Expanded(
+                child: PlaygroundActionButton(
+                  icon: Icons.groups_rounded,
+                  label: 'My Team',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const MyTeamScreen()),
                   ),
-                ],
+                ),
+              ),
+              Expanded(
+                child: PlaygroundActionButton(
+                  icon: Icons.person_search_rounded,
+                  label: 'Find Player',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const FindPlayerScreen()),
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-        const SizedBox(height: 26),
-        const Text(
-          'Teams Looking for Players',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
+          const SizedBox(height: 22),
+          SizedBox(
+            height: 38,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                PlaygroundFilterChip(
+                  label: 'All',
+                  selected: _selectedFilter == 0,
+                  onTap: () {
+                    setState(() => _selectedFilter = 0);
+                    _fetchAvailableTeams(isRefresh: true);
+                  },
+                ),
+                if (homeProvider.isFetchingSports)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: AppColors.mintGreen,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  for (var i = 0; i < homeProvider.sportsList.length; i++) ...[
+                    const SizedBox(width: 10),
+                    PlaygroundFilterChip(
+                      label: homeProvider.sportsList[i]['name'] ?? '',
+                      icon: Icons.sports_rounded,
+                      selected: _selectedFilter == i + 1,
+                      onTap: () {
+                        setState(() => _selectedFilter = i + 1);
+                        _fetchAvailableTeams(isRefresh: true);
+                      },
+                    ),
+                  ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        if (isLoading)
-          const Center(
-            child: CircularProgressIndicator(color: AppColors.mintGreen),
-          )
-        else if (filteredTeams.isEmpty)
-          const Center(
-            child: Padding(
+          const SizedBox(height: 26),
+          const Text(
+            'Teams Looking for Players',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (isLoading)
+            const Center(
+              child: CircularProgressIndicator(color: AppColors.mintGreen),
+            )
+          else if (filteredTeams.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No teams found for the selected filter.',
+                  style: TextStyle(color: Colors.white54, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            for (final team in filteredTeams)
+              PlaygroundTeamCard(
+                team: team,
+                onTap: () => _openTeamDetail(context, team),
+                onJoin: () => _joinTeam(team),
+              ),
+          if (homeProvider.isFetchingMoreAvailableTeams)
+            const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text(
-                'No teams found for the selected filter.',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.mintGreen),
               ),
             ),
-          )
-        else
-          for (final team in filteredTeams)
-            PlaygroundTeamCard(
-              team: team,
-              onTap: () => _openTeamDetail(context, team),
-              onJoin: () => _joinTeam(team),
-            ),
-        if (homeProvider.isFetchingMoreAvailableTeams)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.mintGreen),
+          const SizedBox(height: 12),
+          const Text(
+            'Players Available Nearby',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        const SizedBox(height: 12),
-        const Text(
-          'Players Available Nearby',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 14),
-        for (final player in dummyPlaygroundPlayers)
-          PlaygroundPlayerCard(player: player, onInvite: () {}),
-      ],
+          const SizedBox(height: 14),
+          for (final player in dummyPlaygroundPlayers)
+            PlaygroundPlayerCard(player: player, onInvite: () {}),
+        ],
+      ),
     );
   }
 }

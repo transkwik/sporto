@@ -45,7 +45,14 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
         final List<dynamic> data = response['data'] ?? [];
         setState(() {
           _players = data
-              .where((p) => p['status'] == 1 && p['removed_at'] == null && !(p['joined_at'] == null && p['accepted_at'] == null && p['rejected_at'] == null))
+              .where(
+                (p) =>
+                    p['status'] == 1 &&
+                    p['removed_at'] == null &&
+                    !(p['joined_at'] == null &&
+                        p['accepted_at'] == null &&
+                        p['rejected_at'] == null),
+              )
               .map((p) {
                 String name = p['player_name'] ?? '';
                 String phone = p['mobile_number'] ?? '';
@@ -123,14 +130,14 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
       });
 
       if (response != null && response['success'] == true) {
-        await _fetchPlayers();
         if (mounted) {
           MCP.showMessage(
             context,
-            response['message'] ?? 'Player invited successfully.',
+            'Invitation sent successfully!',
             backgroundColor: Colors.green.shade600,
             icon: Icons.check_circle_rounded,
           );
+          Navigator.of(context).pop();
         }
       } else {
         throw Exception(response?['message'] ?? 'Failed to add player');
@@ -236,7 +243,7 @@ class _AddPlayersScreenState extends State<AddPlayersScreen> {
                     GlassBackButton(onTap: () => Navigator.of(context).pop()),
                     const SizedBox(width: 14),
                     Text(
-                      'Add Team Players',
+                      'Add Team Playerss',
                       style: GoogleFonts.quicksand(
                         color: Colors.white,
                         fontSize: 18,

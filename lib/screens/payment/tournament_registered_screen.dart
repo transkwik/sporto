@@ -10,10 +10,12 @@ class TournamentRegisteredScreen extends StatelessWidget {
     super.key,
     required this.tournament,
     required this.team,
+    required this.selectedPlayerIds,
   });
 
   final Map<String, dynamic> tournament;
   final Map<String, dynamic> team;
+  final List<int> selectedPlayerIds;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +109,7 @@ class TournamentRegisteredScreen extends StatelessWidget {
                         builder: (_) => PaymentMethodScreen(
                           tournament: tournament,
                           team: team,
+                          selectedPlayerIds: selectedPlayerIds,
                         ),
                       ),
                     );

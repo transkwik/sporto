@@ -11,6 +11,7 @@ import 'providers/profile_provider.dart';
 import 'widgets/gender_selector.dart';
 import 'widgets/profile_photo_picker.dart';
 import 'widgets/profile_text_field.dart';
+import '../auth/providers/auth_provider.dart';
 
 /// Profile completion form shown right after OTP verification: photo
 /// upload, personal details, gender selection and location fields, on the
@@ -43,11 +44,97 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    DateTime initialDate = DateTime(2000, 1, 1);
+    if (_dobController.text.trim().isNotEmpty) {
+      try {
+        final parts = _dobController.text.trim().split('/');
+        if (parts.length == 3) {
+          final parsed = DateTime(
+            int.parse(parts[2]),
+            int.parse(parts[1]),
+            int.parse(parts[0]),
+          );
+          if (parsed.isBefore(now)) {
+            initialDate = parsed;
+          }
+        }
+      } catch (_) {}
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initialDate,
       firstDate: DateTime(1950),
       lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1B1E2B),
+              onSurface: Colors.white,
+              onSurfaceVariant: Colors.white70,
+            ),
+            dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1B1E2B)),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: const Color(0xFF1B1E2B),
+              headerBackgroundColor: AppColors.primary,
+              headerForegroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.white38;
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return Colors.white;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.primary;
+                }
+                return null;
+              }),
+              yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.white38;
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return Colors.white;
+              }),
+              yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.primary;
+                }
+                return null;
+              }),
+              todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return AppColors.primary;
+              }),
+              todayBorder: const BorderSide(color: AppColors.primary, width: 1.5),
+              weekdayStyle: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: Colors.white70,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       _dobController.text =
@@ -144,6 +231,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           backgroundColor: AppColors.success,
         ),
       );
+
+      // Fetch the latest profile data and save to AuthProvider
+      try {
+        final checkRes = await UserApis().getCheck();
+        if (checkRes != null && checkRes['data'] != null) {
+          if (mounted) {
+             context.read<AuthProvider>().saveCheckResponce(checkRes['data']);
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching updated profile: $e');
+      }
 
       // Clear all fields so they are empty if the user ever returns
       _nameController.clear();

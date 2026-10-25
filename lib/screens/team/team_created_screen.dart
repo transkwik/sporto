@@ -14,11 +14,13 @@ class TeamCreatedScreen extends StatelessWidget {
     required this.players,
     this.validUntilLabel = '31 Dec 2025',
     this.daysRemaining = 30,
+    this.popCount = 1,
   });
 
   final List<TeamPlayerInfo> players;
   final String validUntilLabel;
   final int daysRemaining;
+  final int popCount;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,13 @@ class TeamCreatedScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: Row(
                   children: [
-                    GlassBackButton(onTap: () => Navigator.of(context).pop()),
+                    GlassBackButton(
+                      onTap: () {
+                        for (int i = 0; i < popCount; i++) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -55,7 +63,11 @@ class TeamCreatedScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () {
+                    for (int i = 0; i < popCount; i++) {
+                      Navigator.of(context).pop();
+                    }
+                  },
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     width: double.infinity,

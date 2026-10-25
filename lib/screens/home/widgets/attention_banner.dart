@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AttentionBanner extends StatelessWidget {
   const AttentionBanner({
     super.key,
-    this.count = 5,
+    this.count = 0,
     this.onTap,
   });
 
@@ -14,6 +14,10 @@ class AttentionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subText = count == 0
+        ? 'No pending requests & invitations'
+        : '$count pending request${count == 1 ? '' : 's'} & invitation${count == 1 ? '' : 's'}';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -59,7 +63,7 @@ class AttentionBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$count pending requests & invitations',
+                    subText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(

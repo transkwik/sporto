@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
-import '../../models/live_match_detail_info.dart';
 import 'widgets/leaderboard_row_card.dart';
 import 'widgets/predictor_prize_card.dart';
 
 /// Predictor Leaderboard for a live match: prize banner plus ranked list of
 /// predictors (top rank highlighted in amber with a trophy).
 class PredictorLeaderboardScreen extends StatelessWidget {
-  const PredictorLeaderboardScreen({super.key, required this.match});
+  const PredictorLeaderboardScreen({
+    super.key,
+    required this.tournamentName,
+    required this.location,
+  });
 
-  final LiveMatchDetailInfo match;
+  final String tournamentName;
+  final String location;
 
   static const List<(int rank, String name, int points)> _entries = [
     (1, 'Devika N.', 1240),
@@ -40,7 +44,7 @@ class PredictorLeaderboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            match.tournamentName,
+                            tournamentName,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
                           ),
@@ -50,7 +54,7 @@ class PredictorLeaderboardScreen extends StatelessWidget {
                             children: [
                               const Icon(Icons.location_on_outlined, color: Colors.white38, size: 12),
                               const SizedBox(width: 3),
-                              Text(match.location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                              Text(location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                             ],
                           ),
                         ],

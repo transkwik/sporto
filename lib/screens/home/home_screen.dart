@@ -6,11 +6,8 @@ import 'providers/home_provider.dart';
 import '../auth/providers/auth_provider.dart';
 import '../auth/providers/location_provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../models/live_match_detail_info.dart';
 import '../../models/match_info.dart';
-import '../../models/next_match_info.dart';
 import '../../models/sport_category.dart';
-import '../../models/tournament_info.dart';
 import '../Matches/lmatch_detail_screen.dart';
 import '../Matches/Matches_screen.dart';
 import '../live_matches/live_matches_screen.dart';
@@ -34,7 +31,6 @@ import 'widgets/home_bottom_nav.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_shortcut_strip.dart';
 import 'widgets/live_match_spotlight_card.dart';
-import 'widgets/next_match_card.dart';
 import 'widgets/quick_action_button.dart';
 import 'widgets/section_header.dart';
 import 'widgets/sport_icon_button.dart';
@@ -124,17 +120,6 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
   int _selectedCategory = 0;
   final ScrollController _scrollController = ScrollController();
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning';
-    } else if (hour < 17) {
-      return 'Good Afternoon';
-    } else {
-      return 'Good Evening';
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -146,9 +131,12 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
       final locProvider = Provider.of<LocationProvider>(context, listen: false);
       double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
       double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
-      homeProvider.fetchTournaments(isRefresh: true, lat: lat, lng: lng);
+      
+      // Explicitly pass sportId: '' to clear any leftover state from previous logins
+      homeProvider.fetchTournaments(isRefresh: true, lat: lat, lng: lng, sportId: '');
       homeProvider.fetchLiveMatches('', isRefresh: true);
       homeProvider.fetchUpcomingMatches('', isRefresh: true);
+      homeProvider.fetchInvitations(isRefresh: true);
     });
   }
 
@@ -194,6 +182,9 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
     double? lat = locProvider.latitude != 0.0 ? locProvider.latitude : null;
     double? lng = locProvider.longitude != 0.0 ? locProvider.longitude : null;
     homeProvider.fetchTournaments(isRefresh: true, lat: lat, lng: lng, sportId: sportId);
+
+    // Refresh pending invitations
+    homeProvider.fetchInvitations(isRefresh: true);
   }
 
   @override
@@ -201,8 +192,6 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
     final authProvider = Provider.of<AuthProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
     final userProfile = authProvider.checkResponse?['user']?['profile'] ?? {};
-    
-    final String userName = userProfile['full_name'] ?? 'Player';
     final String city = userProfile['city'] ?? '';
     final String state = userProfile['state'] ?? '';
     
@@ -240,10 +229,15 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
           child: _LocationRow(location: location),
         ),
         const SizedBox(height: 14),
-        AttentionBanner(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AttentionHubScreen()),
+        Consumer<HomeProvider>(
+          builder: (context, homeProvider, _) {
+            return AttentionBanner(
+              count: homeProvider.pendingInvitationsCount,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AttentionHubScreen()),
+                );
+              },
             );
           },
         ),
@@ -349,10 +343,10 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                         child: LiveMatchSpotlightCard(
                           match: matchInfo,
                           onWatch: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: matchInfo.id)),
+                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(matchId: matchInfo.id)),
                           ),
                           onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: matchInfo.id)),
+                            MaterialPageRoute(builder: (_) => LiveMatchDetailScreen(matchId: matchInfo.id)),
                           ),
                         ),
                       );

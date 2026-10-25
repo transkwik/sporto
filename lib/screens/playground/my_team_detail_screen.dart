@@ -298,7 +298,7 @@ class _MyTeamDetailScreenState extends State<MyTeamDetailScreen> {
   }
 
   Widget _buildPlayersList() {
-    final players = _teamDetails?['players'] as List<dynamic>?;
+    final players = (_teamDetails?['team_players'] ?? _teamDetails?['roster']) as List<dynamic>?;
     if (players == null || players.isEmpty) return const SizedBox.shrink();
 
     return Container(

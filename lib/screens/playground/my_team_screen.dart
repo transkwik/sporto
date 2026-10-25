@@ -114,9 +114,11 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                               team['total_players']?.toString() ?? '0';
                           final sportName =
                               team['sport']?['name'] ?? 'Unknown Sport';
-                          final captain =
-                              team['captain_name'] ??
-                              'Unknown'; // Default if api doesn't send captain
+                          final captainObj = team['captain'];
+                          final captain = captainObj?['display_name'] ??
+                                          captainObj?['name'] ??
+                                          captainObj?['profile']?['full_name'] ??
+                                          'Unknown';
                           final city = team['city'] ?? 'Unknown';
 
                           return GestureDetector(

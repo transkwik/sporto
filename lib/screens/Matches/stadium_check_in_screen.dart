@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
-import '../../models/live_match_detail_info.dart';
 import 'widgets/foil_badge_minted_sheet.dart';
 import 'widgets/match_status_pills.dart';
 import 'widgets/stadium_zone_card.dart';
@@ -12,9 +11,24 @@ import 'predictor_leaderboard_screen.dart';
 /// this match's badge. Reuses the match header chrome from the live
 /// scorecard so the viewer stays oriented.
 class StadiumCheckInScreen extends StatelessWidget {
-  const StadiumCheckInScreen({super.key, required this.match});
+  const StadiumCheckInScreen({
+    super.key,
+    required this.tournamentName,
+    required this.location,
+    required this.roundLabel,
+    required this.teamAName,
+    required this.teamBName,
+    required this.teamARole,
+    required this.teamBRole,
+  });
 
-  final LiveMatchDetailInfo match;
+  final String tournamentName;
+  final String location;
+  final String roundLabel;
+  final String teamAName;
+  final String teamBName;
+  final String teamARole;
+  final String teamBRole;
 
   static const List<(String name, String occupancy, int serial)> _zones = [
     ('Front Row', '84 here', 185),
@@ -25,16 +39,21 @@ class StadiumCheckInScreen extends StatelessWidget {
 
   void _openLeaderboard(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PredictorLeaderboardScreen(match: match)),
+      MaterialPageRoute(
+        builder: (_) => PredictorLeaderboardScreen(
+          tournamentName: tournamentName,
+          location: location,
+        ),
+      ),
     );
   }
 
   void _openBadgeSheet(BuildContext context, String zoneName, int serial) {
     FoilBadgeMintedSheet.show(
       context,
-      roundLabel: match.roundLabel,
-      teamAName: match.teamAName,
-      teamBName: match.teamBName,
+      roundLabel: roundLabel,
+      teamAName: teamAName,
+      teamBName: teamBName,
       zoneName: zoneName,
       serialNumber: serial,
       onNice: () => _openLeaderboard(context),
@@ -61,7 +80,7 @@ class StadiumCheckInScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            match.tournamentName,
+                            tournamentName,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
                           ),
@@ -71,7 +90,7 @@ class StadiumCheckInScreen extends StatelessWidget {
                             children: [
                               const Icon(Icons.location_on_outlined, color: Colors.white38, size: 12),
                               const SizedBox(width: 3),
-                              Text(match.location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                              Text(location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                             ],
                           ),
                         ],
@@ -105,13 +124,13 @@ class StadiumCheckInScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          MatchStatusPills(roundLabel: match.roundLabel),
+                          MatchStatusPills(roundLabel: roundLabel),
                           const SizedBox(height: 16),
                           TeamMatchupRow(
-                            teamAName: match.teamAName,
-                            teamARole: match.teamARole,
-                            teamBName: match.teamBName,
-                            teamBRole: match.teamBRole,
+                            teamAName: teamAName,
+                            teamARole: teamARole,
+                            teamBName: teamBName,
+                            teamBRole: teamBRole,
                           ),
                         ],
                       ),

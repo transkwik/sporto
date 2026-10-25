@@ -1,42 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/globalefunction/global_functions.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../core/apiServices/user_api.dart';
-
-class TeamInvitation {
-  TeamInvitation({
-    required this.id,
-    required this.teamName,
-    required this.captain,
-    required this.sport,
-    required this.logoUrl,
-    required this.createdAt,
-  });
-
-  final int id;
-  final String teamName;
-  final String captain;
-  final String sport;
-  final String? logoUrl;
-  final String createdAt;
-
-  factory TeamInvitation.fromJson(Map<String, dynamic> json) {
-    final team = json['team'] ?? {};
-    final invitedBy = json['invited_by_user'] ?? {};
-    final sportObj = team['sport'] ?? {};
-    
-    return TeamInvitation(
-      id: json['id'] as int,
-      teamName: team['name'] ?? 'Unknown Team',
-      captain: invitedBy['name'] ?? 'Captain',
-      sport: sportObj['name'] ?? 'Unknown Sport',
-      logoUrl: team['logo_url'],
-      createdAt: json['created_at'] ?? '',
-    );
-  }
-}
+import '../../models/team_invitation.dart';
+import 'providers/home_provider.dart';
 
 /// Attention hub → Team Invitations: accept or reject pending team invites.
 class TeamInvitationsScreen extends StatefulWidget {
@@ -138,9 +108,10 @@ class _TeamInvitationsScreenState extends State<TeamInvitationsScreen> {
     );
 
     try {
+      final homeProvider = context.read<HomeProvider>();
       final res = accepted
-          ? await UserApis().acceptInvitation(invite.id)
-          : await UserApis().rejectInvitation(invite.id);
+          ? await homeProvider.acceptInvitation(invite.id)
+          : await homeProvider.rejectInvitation(invite.id);
 
       if (mounted) Navigator.pop(context); // close loader
 

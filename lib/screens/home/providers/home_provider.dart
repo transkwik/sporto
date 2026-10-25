@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sporto/core/apiServices/user_api.dart';
 import 'package:sporto/core/apiServices/api_constants.dart';
+import 'package:sporto/models/team_invitation.dart';
 
 class HomeProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -114,14 +115,19 @@ class HomeProvider extends ChangeNotifier {
       } else if (response != null && response['success'] == true) {
         final data = response['data'];
         if (data != null) {
-          final List<dynamic> newData = data['data'] ?? [];
+          List<dynamic> newData = [];
+          if (data is List) {
+            newData = data;
+          } else if (data is Map && data.containsKey('data')) {
+            newData = data['data'] ?? [];
+            _lastTournamentPage = data['last_page'] ?? 1;
+          }
           if (isRefresh) {
             _tournamentsList = newData;
           } else {
             _tournamentsList.addAll(newData);
           }
           _currentTournamentPage++;
-          _lastTournamentPage = data['last_page'] ?? 1;
         }
       } else {
         _errorMessage = response?['message'] ?? 'Failed to fetch tournaments.';
@@ -198,9 +204,15 @@ class HomeProvider extends ChangeNotifier {
       if (response != null && response['error'] != null) {
         _errorMessage = response['error'];
       } else if (response != null && response['success'] == true) {
-        final data = response['data'] as List<dynamic>?;
+        final data = response['data'];
         if (data != null) {
-          _teamsList = data.map((e) => e as Map<String, dynamic>).toList();
+          List<dynamic> newData = [];
+          if (data is List) {
+            newData = data;
+          } else if (data is Map) {
+            newData = data['items'] ?? data['data'] ?? [];
+          }
+          _teamsList = newData.map((e) => e as Map<String, dynamic>).toList();
         }
       } else {
         _errorMessage = response?['message'] ?? 'Failed to fetch teams.';
@@ -530,9 +542,16 @@ class HomeProvider extends ChangeNotifier {
       if (response != null && response['error'] != null) {
         _errorMessage = response['error'];
       } else if (response != null && response['success'] == true) {
-        final data = response['data']?['items'] as List<dynamic>?;
+        final data = response['data'];
         if (data != null) {
-          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          List<dynamic> newData = [];
+          if (data is List) {
+            newData = data;
+          } else if (data is Map) {
+            newData = data['items'] ?? data['data'] ?? [];
+            _lastLiveMatchesPage = data['last_page'] ?? 1;
+          }
+          final mappedData = newData.map((e) => e as Map<String, dynamic>).toList();
           
           if (isRefresh) {
             _liveMatchesList = mappedData;
@@ -540,8 +559,6 @@ class HomeProvider extends ChangeNotifier {
             _liveMatchesList.addAll(mappedData);
           }
           _currentLiveMatchesPage++;
-          
-          _lastLiveMatchesPage = response['data']?['last_page'] ?? 1;
         }
       } else {
         _errorMessage = response?['message'] ?? 'Failed to fetch live matches.';
@@ -598,9 +615,16 @@ class HomeProvider extends ChangeNotifier {
       if (response != null && response['error'] != null) {
         _errorMessage = response['error'];
       } else if (response != null && response['success'] == true) {
-        final data = response['data']?['items'] as List<dynamic>?;
+        final data = response['data'];
         if (data != null) {
-          final mappedData = data.map((e) => e as Map<String, dynamic>).toList();
+          List<dynamic> newData = [];
+          if (data is List) {
+            newData = data;
+          } else if (data is Map) {
+            newData = data['items'] ?? data['data'] ?? [];
+            _lastUpcomingMatchesPage = data['last_page'] ?? 1;
+          }
+          final mappedData = newData.map((e) => e as Map<String, dynamic>).toList();
           
           if (isRefresh) {
             _upcomingMatchesList = mappedData;
@@ -608,8 +632,6 @@ class HomeProvider extends ChangeNotifier {
             _upcomingMatchesList.addAll(mappedData);
           }
           _currentUpcomingMatchesPage++;
-          
-          _lastUpcomingMatchesPage = response['data']?['last_page'] ?? 1;
         }
       } else {
         _errorMessage = response?['message'] ?? 'Failed to fetch upcoming matches.';
@@ -703,5 +725,134 @@ class HomeProvider extends ChangeNotifier {
       debugPrint('Error fetching live score in provider: $e');
     }
     return null;
+  }
+
+  // --- Invitations ---
+  bool _isFetchingInvitations = false;
+  bool get isFetchingInvitations => _isFetchingInvitations;
+
+  bool _isFetchingMoreInvitations = false;
+  bool get isFetchingMoreInvitations => _isFetchingMoreInvitations;
+
+  int _pendingInvitationsCount = 0;
+  int get pendingInvitationsCount => _pendingInvitationsCount;
+
+  List<TeamInvitation> _invitations = [];
+  List<TeamInvitation> get invitations => _invitations;
+
+  int _currentInvitationsPage = 1;
+  int _lastInvitationsPage = 1;
+
+  void _setFetchingInvitations(bool value) {
+    _isFetchingInvitations = value;
+    notifyListeners();
+  }
+
+  void _setFetchingMoreInvitations(bool value) {
+    _isFetchingMoreInvitations = value;
+    notifyListeners();
+  }
+
+  Future<void> fetchInvitations({
+    bool isRefresh = false,
+    String search = '',
+    int perPage = 20,
+  }) async {
+    if (isRefresh) {
+      _currentInvitationsPage = 1;
+      _setFetchingInvitations(true);
+    } else {
+      if (_currentInvitationsPage > _lastInvitationsPage || _isFetchingMoreInvitations) {
+        return;
+      }
+      _setFetchingMoreInvitations(true);
+    }
+
+    try {
+      final response = await UserApis().getInvitations(
+        _currentInvitationsPage,
+        perPage,
+        search,
+      );
+
+      if (response != null && response['success'] == true) {
+        final data = response['data'];
+        List<TeamInvitation> mapped = [];
+        if (data is List) {
+          mapped = data.map((json) => TeamInvitation.fromJson(json as Map<String, dynamic>)).toList();
+        }
+
+        final meta = response['meta'];
+        if (meta != null) {
+          _lastInvitationsPage = meta['last_page'] ?? 1;
+          if (meta['total'] != null) {
+            _pendingInvitationsCount = (meta['total'] as num).toInt();
+          } else if (isRefresh) {
+            _pendingInvitationsCount = mapped.length;
+          }
+        } else if (response['total'] != null) {
+          _pendingInvitationsCount = (response['total'] as num).toInt();
+        } else if (isRefresh) {
+          _pendingInvitationsCount = mapped.length;
+        }
+
+        if (isRefresh) {
+          _invitations = mapped;
+        } else {
+          _invitations.addAll(mapped);
+        }
+        _currentInvitationsPage++;
+      }
+    } catch (e) {
+      debugPrint('Error fetching invitations: $e');
+    } finally {
+      if (isRefresh) {
+        _setFetchingInvitations(false);
+      } else {
+        _setFetchingMoreInvitations(false);
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>?> acceptInvitation(int id) async {
+    try {
+      final response = await UserApis().acceptInvitation(id);
+      if (response != null && response['success'] == true) {
+        _invitations.removeWhere((item) => item.id == id);
+        if (_pendingInvitationsCount > 0) {
+          _pendingInvitationsCount--;
+        }
+        notifyListeners();
+      }
+      return response;
+    } catch (e) {
+      debugPrint('Error accepting invitation: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> rejectInvitation(int id) async {
+    try {
+      final response = await UserApis().rejectInvitation(id);
+      if (response != null && response['success'] == true) {
+        _invitations.removeWhere((item) => item.id == id);
+        if (_pendingInvitationsCount > 0) {
+          _pendingInvitationsCount--;
+        }
+        notifyListeners();
+      }
+      return response;
+    } catch (e) {
+      debugPrint('Error rejecting invitation: $e');
+      return null;
+    }
+  }
+
+  void clearInvitations() {
+    _invitations.clear();
+    _pendingInvitationsCount = 0;
+    _currentInvitationsPage = 1;
+    _lastInvitationsPage = 1;
+    notifyListeners();
   }
 }

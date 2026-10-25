@@ -41,7 +41,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   late final TextEditingController _cityController = TextEditingController();
 
   final List<TeamPlayerInfo> _players = [];
-  
+
   List<dynamic> _sports = [];
   bool _isLoadingSports = true;
   dynamic _selectedSport;
@@ -57,13 +57,14 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     super.initState();
     _teamNameController.addListener(_handleTeamNameChanged);
     _cityController.addListener(_handleTeamNameChanged);
-    
+
     // Add logged-in user as captain by default
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
-      final userMap = authProvider.checkResponse?['user'] as Map<String, dynamic>?;
+      final userMap =
+          authProvider.checkResponse?['user'] as Map<String, dynamic>?;
       final profileMap = userMap?['profile'] as Map<String, dynamic>?;
-      
+
       final fullName = profileMap?['full_name'] ?? userMap?['name'];
       final phone = userMap?['mobile_number']?.toString() ?? '';
       if (fullName == null || fullName.toString().trim().isEmpty) return;
@@ -125,7 +126,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         } else {
           setState(() => _isUploadingLogo = false);
           if (mounted) {
-            MCP.showMessage(context, res?['message'] ?? 'Failed to upload logo');
+            MCP.showMessage(
+              context,
+              res?['message'] ?? 'Failed to upload logo',
+            );
           }
         }
       } catch (e) {
@@ -158,7 +162,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: AppColors.mintGreen),
+            ),
           );
           try {
             final res = await UserApis().inviteTeamPlayer(_createdTeamId!, {
@@ -168,12 +174,28 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             });
             if (mounted) Navigator.pop(context); // close loader
             if (res != null && res['success'] == true) {
-              setState(() => _players.add(TeamPlayerInfo(name: name, phone: phone, isCaptain: asCaptain)));
+              setState(
+                () => _players.add(
+                  TeamPlayerInfo(
+                    name: name,
+                    phone: phone,
+                    isCaptain: asCaptain,
+                  ),
+                ),
+              );
               if (mounted) {
-                MCP.showMessage(context, "Player added!", backgroundColor: Colors.green.shade600);
+                MCP.showMessage(
+                  context,
+                  "Player added!",
+                  backgroundColor: Colors.green.shade600,
+                );
               }
             } else {
-              if (mounted) MCP.showMessage(context, res?['message'] ?? "Failed to add player");
+              if (mounted)
+                MCP.showMessage(
+                  context,
+                  res?['message'] ?? "Failed to add player",
+                );
             }
           } catch (e) {
             if (mounted) {
@@ -227,13 +249,19 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.mintGreen)),
+          builder: (_) => const Center(
+            child: CircularProgressIndicator(color: AppColors.mintGreen),
+          ),
         );
         try {
           setState(() => _players.removeAt(index));
           if (mounted) {
             Navigator.pop(context);
-            MCP.showMessage(context, "Player removed", backgroundColor: Colors.green.shade600);
+            MCP.showMessage(
+              context,
+              "Player removed",
+              backgroundColor: Colors.green.shade600,
+            );
           }
         } catch (e) {
           if (mounted) Navigator.pop(context);
@@ -278,6 +306,26 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       return;
     }
 
+    if (_players.isNotEmpty) {
+      try {
+        final List<Map<String, dynamic>> playersPayload = _players
+            .where((p) => !p.isCaptain)
+            .map((p) {
+              return {
+                "mobile_number": p.phone,
+                "country_code": "+91",
+                "name": p.name,
+              };
+            }).toList();
+
+        if (playersPayload.isNotEmpty) {
+          await UserApis().inviteTeamPlayersList(teamId, playersPayload);
+        }
+      } catch (e) {
+        debugPrint('Failed to send player invitations: $e');
+      }
+    }
+
     if (mounted) {
       Navigator.pop(context); // Close dialog
       setState(() {
@@ -285,7 +333,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       });
       MCP.showMessage(
         context,
-        "Team created successfully! Now add players.",
+        "Team created and invitations sent successfully!",
         backgroundColor: Colors.green.shade600,
         icon: Icons.check_circle_rounded,
       );
@@ -310,7 +358,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
 
   void _finishFlow() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => TeamCreatedScreen(players: _players)),
+      MaterialPageRoute(builder: (_) => TeamCreatedScreen(
+        players: _players,
+        popCount: widget.tournament != null ? 2 : 1,
+      )),
     );
   }
 
@@ -341,7 +392,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     GlassBackButton(onTap: () => Navigator.of(context).pop()),
                     const SizedBox(width: 14),
                     Text(
-                      'Create New Team',
+                      'Create New Teamm',
                       style: GoogleFonts.quicksand(
                         color: Colors.white,
                         fontSize: 18,
@@ -430,11 +481,13 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                                     child: Text(sport['name'] ?? ''),
                                   );
                                 }).toList(),
-                                onChanged: _createdTeamId == null ? (val) {
-                                  if (val != null) {
-                                    setState(() => _selectedSport = val);
-                                  }
-                                } : null,
+                                onChanged: _createdTeamId == null
+                                    ? (val) {
+                                        if (val != null) {
+                                          setState(() => _selectedSport = val);
+                                        }
+                                      }
+                                    : null,
                               ),
                             ),
                           ),
@@ -452,14 +505,19 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                       hasPhoto: _uploadedLogoUrl != null,
                       photoUrl: _uploadedLogoUrl,
                       isUploading: _isUploadingLogo,
-                      onUpload: _createdTeamId == null ? _pickAndUploadLogo : () {},
-                      onClear: _createdTeamId == null ? () {
-                        setState(() {
-                          _uploadedLogoUrl = null;
-                          _uploadedLogoPath = null;
-                        });
-                      } : () {},
+                      onUpload: _createdTeamId == null
+                          ? _pickAndUploadLogo
+                          : () {},
+                      onClear: _createdTeamId == null
+                          ? () {
+                              setState(() {
+                                _uploadedLogoUrl = null;
+                                _uploadedLogoPath = null;
+                              });
+                            }
+                          : () {},
                     ),
+                    /*
                     const SizedBox(height: 26),
                     Text(
                       'Captain',
@@ -479,7 +537,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFC45AD4).withValues(alpha: 0.7)),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFC45AD4,
+                            ).withValues(alpha: 0.7),
+                          ),
                         ),
                         child: Text(
                           '+ Add Captain',
@@ -491,6 +553,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                         ),
                       ),
                     ),
+                    */
                     const SizedBox(height: 16),
                     for (var i = 0; i < _players.length; i++) ...[
                       Row(
@@ -512,10 +575,14 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.mintGreen.withValues(alpha: 0.16),
+                              color: AppColors.mintGreen.withValues(
+                                alpha: 0.16,
+                              ),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.mintGreen.withValues(alpha: 0.4),
+                                color: AppColors.mintGreen.withValues(
+                                  alpha: 0.4,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -540,7 +607,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     Row(
                       children: [
                         if (_isSquadFull) ...[
-                          const Icon(Icons.check_rounded, color: AppColors.mintGreen, size: 16),
+                          const Icon(
+                            Icons.check_rounded,
+                            color: AppColors.mintGreen,
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                         ],
                         Text(
@@ -554,11 +625,20 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                         if (_isSquadFull) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.mintGreen.withValues(alpha: 0.16),
+                              color: AppColors.mintGreen.withValues(
+                                alpha: 0.16,
+                              ),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.4)),
+                              border: Border.all(
+                                color: AppColors.mintGreen.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
                             ),
                             child: Text(
                               'Team Completed',
@@ -580,10 +660,14 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                                 vertical: 08,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppColors.primaryLight.withValues(alpha: 0.6),
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.6,
+                                  ),
                                 ),
                               ),
                               child: Row(
@@ -635,7 +719,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                       boxShadow: (_isSquadFull && _isTeamReady)
                           ? [
                               BoxShadow(
-                                color: const Color(0xFFFF7A1E).withValues(alpha: 0.4),
+                                color: const Color(
+                                  0xFFFF7A1E,
+                                ).withValues(alpha: 0.4),
                                 blurRadius: 22,
                                 offset: const Offset(0, 10),
                               ),

@@ -24,7 +24,11 @@ class PlaygroundTeamCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final teamName = team['team_name'] ?? team['name'] ?? 'Unnamed Team';
     final sportName = team['sport']?['name'] ?? 'Sport';
-    final captainName = team['captain']?['name'] ?? 'Unknown Captain';
+    final captain = team['captain'];
+    final captainName = captain?['display_name'] ?? 
+                        captain?['name'] ?? 
+                        captain?['profile']?['full_name'] ?? 
+                        'Unknown Captain';
     final location = team['city'] ?? 'Unknown';
     final maxPlayers = team['total_players'] ?? 11;
     final playersCount = team['members']?['current_count'] ?? 0;

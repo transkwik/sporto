@@ -109,6 +109,60 @@ class AppTheme {
         cursorColor: AppColors.primary,
         selectionHandleColor: AppColors.primary,
       ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: const Color(0xFF1B1E2B),
+        headerBackgroundColor: AppColors.primary,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return Colors.white38;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return Colors.white;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.primary;
+          }
+          return null;
+        }),
+        yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return Colors.white38;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return Colors.white;
+        }),
+        yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.primary;
+          }
+          return null;
+        }),
+        todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return AppColors.primary;
+        }),
+        todayBorder: const BorderSide(color: AppColors.primary, width: 1.5),
+        weekdayStyle: const TextStyle(
+          color: Colors.white70,
+          fontWeight: FontWeight.w600,
+        ),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: Colors.white70,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 }

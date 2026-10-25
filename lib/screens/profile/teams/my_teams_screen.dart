@@ -21,7 +21,10 @@ class MyTeamsScreen extends StatefulWidget {
 
 class _MyTeamsScreenState extends State<MyTeamsScreen> {
   int _selectedSport = 0;
-  static const _filters = dummyProfileSports;
+  static const _filters = [
+    (Icons.all_inclusive_rounded, 'All'),
+    ...dummyProfileSports,
+  ];
   String get _sportLabel => _filters[_selectedSport].$2;
 
   final ScrollController _scrollController = ScrollController();
@@ -87,10 +90,13 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
     }
   }
 
-  List<Map<String, dynamic>> get _teamsForSport => _allTeams.where((team) {
-    final sport = team['sport']?['name']?.toString() ?? '';
-    return sport == _sportLabel;
-  }).toList();
+  List<Map<String, dynamic>> get _teamsForSport {
+    if (_sportLabel == 'All') return _allTeams;
+    return _allTeams.where((team) {
+      final sport = team['sport']?['name']?.toString() ?? '';
+      return sport == _sportLabel;
+    }).toList();
+  }
 
   List<Map<String, dynamic>> get _complete => _teamsForSport.where((t) => t['completion']?['is_complete'] == true).toList();
   List<Map<String, dynamic>> get _incomplete => _teamsForSport.where((t) => t['completion']?['is_complete'] != true).toList();
@@ -99,6 +105,9 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => CreateTeamScreen(initialTeamName: name ?? '')),
     );
+    if (mounted) {
+      _fetchTeams(isRefresh: true);
+    }
   }
 
   void _completeTeam(Map<String, dynamic> team) {

@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/glass_back_button.dart';
 import '../../../core/apiServices/user_api.dart';
-import '../../../models/live_match_detail_info.dart';
 import '../../../models/my_tournament_info.dart';
 import '../../../models/profile_info.dart';
 import '../../Matches/lmatch_detail_screen.dart';
@@ -78,7 +77,14 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
       );
 
       if (response != null && response['success'] == true) {
-        final data = response['data'] as List<dynamic>?;
+        final resData = response['data'];
+        List<dynamic>? data;
+        if (resData is List) {
+          data = resData;
+        } else if (resData is Map) {
+          data = resData['items'] ?? resData['data'];
+        }
+
         if (data != null) {
           final mappedData = data.map((e) {
             final json = e as Map<String, dynamic>;
@@ -92,9 +98,12 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
               computedStatus = MyTournamentStatus.completed;
             }
 
-            final teamA = json['my_participation']?['team_name']?.toString() ?? 'My Team';
-            final teamB = json['next_match']?['opponent']?['name']?.toString() ?? 'TBD';
-            final roundLabel = json['next_match']?['round']?['name']?.toString() ?? 'TBD';
+            final teamA =
+                json['my_participation']?['team_name']?.toString() ?? 'My Team';
+            final teamB =
+                json['next_match']?['opponent']?['name']?.toString() ?? 'TBD';
+            final roundLabel =
+                json['next_match']?['round']?['name']?.toString() ?? 'TBD';
 
             return MyTournamentInfo(
               id: json['id']?.toString() ?? '0',
@@ -105,7 +114,8 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
               location: json['venue']?.toString() ?? '',
               teamA: teamA,
               teamB: teamB,
-              statusLine: json['dates']?['tournament_start_at']?.toString() ?? '',
+              statusLine:
+                  json['dates']?['tournament_start_at']?.toString() ?? '',
             );
           }).toList();
 
@@ -142,8 +152,8 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const LiveMatchDetailScreen(
-            match: dummyLiveMatchDetail,
-            matchId: 3665, // Should update with actual match id later if available in my_tournaments API
+            matchId:
+                3665, // Should update with actual match id later if available in my_tournaments API
           ),
         ),
       );
@@ -240,38 +250,64 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
               Expanded(
                 child: _isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
                       )
                     : _items.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No ${_tab.name} $_sportLabel tournaments.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.quicksand(
-                                color: Colors.white54,
-                                fontSize: 14,
+                    ? RefreshIndicator(
+                        onRefresh: () async =>
+                            _fetchTournaments(isRefresh: true),
+                        color: AppColors.mintGreen,
+                        backgroundColor: const Color(0xFF161A24),
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.3,
+                            ),
+                            Center(
+                              child: Text(
+                                'No ${_tab.name} $_sportLabel tournaments.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white54,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          )
-                        : ListView.separated(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                            itemCount: _items.length + (_isFetchingMore ? 1 : 0),
-                            separatorBuilder: (_, __) => const SizedBox(height: 14),
-                            itemBuilder: (context, index) {
-                              if (index == _items.length) {
-                                return const Center(
-                                  child: CircularProgressIndicator(color: AppColors.primary),
-                                );
-                              }
-                              final tournament = _items[index];
-                              return MyTournamentCard(
-                                tournament: tournament,
-                                onTap: () => _openDetails(tournament),
-                                onCta: () => _onCta(tournament),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async =>
+                            _fetchTournaments(isRefresh: true),
+                        color: AppColors.mintGreen,
+                        backgroundColor: const Color(0xFF161A24),
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          controller: _scrollController,
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                          itemCount: _items.length + (_isFetchingMore ? 1 : 0),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            if (index == _items.length) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
                               );
-                            },
-                          ),
+                            }
+                            final tournament = _items[index];
+                            return MyTournamentCard(
+                              tournament: tournament,
+                              onTap: () => _openDetails(tournament),
+                              onCta: () => _onCta(tournament),
+                            );
+                          },
+                        ),
+                      ),
               ),
             ],
           ),

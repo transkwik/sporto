@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/match_info.dart';
-import '../../models/live_match_detail_info.dart';
+import '../../models/match_data_parser.dart';
 import '../home/providers/home_provider.dart';
 import '../home/widgets/home_header.dart';
 import '../home/widgets/home_search_bar.dart';
@@ -86,7 +86,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LiveMatchDetailScreen(
-          match: dummyLiveMatchDetail,
           matchId: matchData['id'] as int? ?? 3665,
         ),
       ),
@@ -103,15 +102,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
-  /// Same API → MatchInfo mapping as before. Only the card widget is new.
+  /// Maps one `/matches` API item to a feed card. Shared parsing lives in
+  /// [MatchDataParser] so live, upcoming and completed tabs stay consistent.
   Widget _buildMatchCard(Map<String, dynamic> matchData) {
-    final match = matchData['match'];
-    final status = match?['status'] ?? 'Scheduled';
-
-    final sportName = matchData['sport']?['name'] ?? 'Unknown Sport';
+    final sportName = matchData['sport']?['name']?.toString() ?? 'Unknown Sport';
     final tournamentName = matchData['tournament']?['name'];
     final formatName = matchData['format']?['name'];
-    
+
     String title = 'Tournament';
     if (tournamentName != null && formatName != null) {
       title = '$tournamentName • $formatName';
@@ -121,53 +118,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
       title = formatName.toString();
     }
 
-    final teams = matchData['teams'] as List<dynamic>? ?? [];
-    final teamA = teams.isNotEmpty ? teams[0]['name'] : 'Team A';
-    final teamB = teams.length > 1 ? teams[1]['name'] : 'Team B';
-
-    String scoreA = '0/0';
-    String scoreB = '0/0';
-
-    if (teams.isNotEmpty) {
-      final t1Id = teams[0]['id']?.toString();
-      final scoringData = matchData['scoring']?['score']?['teams'];
-      
-      if (scoringData != null && t1Id != null && scoringData[t1Id] != null) {
-        final sc1 = scoringData[t1Id]['score']?.toString() ?? '0';
-        final w1 = scoringData[t1Id]['wickets']?.toString();
-        scoreA = w1 != null ? '$sc1/$w1' : sc1;
-      } else {
-        // Fallback for older formats or missing scoring logic
-        scoreA = match?['score_a']?.toString() ??
-            match?['scoreA']?.toString() ??
-            teams[0]['score']?.toString() ??
-            '0/0';
-      }
-
-      if (teams.length > 1) {
-        final t2Id = teams[1]['id']?.toString();
-        if (scoringData != null && t2Id != null && scoringData[t2Id] != null) {
-          final sc2 = scoringData[t2Id]['score']?.toString() ?? '0';
-          final w2 = scoringData[t2Id]['wickets']?.toString();
-          scoreB = w2 != null ? '$sc2/$w2' : sc2;
-        } else {
-          scoreB = match?['score_b']?.toString() ??
-              match?['scoreB']?.toString() ??
-              teams[1]['score']?.toString() ??
-              '0/0';
-        }
-      }
-    }
-
-    final matchInfo = MatchInfo(
-      sport: sportName,
-      title: title,
-      teamA: teamA,
-      teamB: teamB,
-      scoreA: scoreA,
-      scoreB: scoreB,
-      status: status,
-    );
+    final teamA = MatchDataParser.team(matchData, isA: true);
+    final teamB = MatchDataParser.team(matchData, isA: false);
+    final scoreA = MatchDataParser.score(matchData, teamA.id);
+    final scoreB = MatchDataParser.score(matchData, teamB.id);
 
     final kind = _tabIndex == 0
         ? MatchFeedKind.live
@@ -175,35 +129,37 @@ class _MatchesScreenState extends State<MatchesScreen> {
             ? MatchFeedKind.upcoming
             : MatchFeedKind.completed;
 
-    final overs = match?['overs']?.toString() ?? matchData['overs']?.toString() ?? '';
-    final winner = match?['winner']?['name']?.toString() ??
-        matchData['winner']?['name']?.toString() ??
-        match?['winner']?.toString() ??
-        matchData['winner']?.toString() ??
-        teamB;
-    final prize = match?['prize']?.toString() ??
-        matchData['prize']?.toString() ??
-        matchData['prize_money']?.toString() ??
-        '';
+    // The live card has no separate overs slot, so fold overs into the score.
+    String withOvers(({String score, String overs, bool hasData}) s) =>
+        s.overs.isNotEmpty ? '${s.score} (${s.overs})' : s.score;
+
+    final String status = switch (kind) {
+      MatchFeedKind.live => MatchDataParser.liveStatus(matchData),
+      MatchFeedKind.upcoming => MatchDataParser.startsIn(matchData),
+      MatchFeedKind.completed => matchData['status_label']?.toString() ?? 'Completed',
+    };
+
+    final matchInfo = MatchInfo(
+      id: matchData['id'] as int? ?? 0,
+      sport: sportName,
+      title: title,
+      teamA: teamA.name,
+      teamB: teamB.name,
+      scoreA: kind == MatchFeedKind.live ? withOvers(scoreA) : scoreA.score,
+      scoreB: kind == MatchFeedKind.live ? withOvers(scoreB) : scoreB.score,
+      status: status,
+    );
 
     return MatchFeedCard(
       match: matchInfo,
       kind: kind,
-      roundLabel: matchData['round']?['name']?.toString() ??
-          matchData['stage']?.toString() ??
-          title,
-      timeLabel: match?['start_time']?.toString() ??
-          match?['time']?.toString() ??
-          matchData['time']?.toString() ??
-          '',
-      venue: matchData['venue']?['name']?.toString() ??
-          matchData['ground']?.toString() ??
-          match?['venue']?.toString() ??
-          '',
-      oversA: teams.isNotEmpty ? (teams[0]['overs']?.toString() ?? overs) : overs,
-      oversB: teams.length > 1 ? (teams[1]['overs']?.toString() ?? overs) : overs,
-      winnerName: winner,
-      prizeLabel: prize,
+      roundLabel: matchData['round']?['name']?.toString() ?? title,
+      timeLabel: MatchDataParser.timeLabel(matchData),
+      venue: matchData['venue']?['name']?.toString() ?? '',
+      oversA: scoreA.overs,
+      oversB: scoreB.overs,
+      winnerName: MatchDataParser.winnerName(matchData),
+      prizeLabel: '',
       onTap: () => kind == MatchFeedKind.completed
           ? _openCompletedDetail(matchData)
           : _openMatchDetail(context, matchData),
@@ -328,10 +284,31 @@ class _MatchesScreenState extends State<MatchesScreen> {
           child: isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.mintGreen))
               : items.isEmpty
-                  ? Center(
-                      child: Text(
-                        emptyMessage,
-                        style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  ? RefreshIndicator(
+                      onRefresh: () async {
+                        final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+                        final sportId = _currentSportId(homeProvider);
+                        if (_tabIndex == 0) {
+                          await homeProvider.fetchLiveMatches(sportId, isRefresh: true);
+                        } else if (_tabIndex == 1) {
+                          await homeProvider.fetchUpcomingMatches(sportId, isRefresh: true);
+                        } else {
+                          await homeProvider.fetchAllMatches(sportId, isRefresh: true);
+                        }
+                      },
+                      color: AppColors.mintGreen,
+                      backgroundColor: AppColors.secondary,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                          Center(
+                            child: Text(
+                              emptyMessage,
+                              style: const TextStyle(color: Colors.white54, fontSize: 14),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : RefreshIndicator(

@@ -147,10 +147,21 @@ class UserApis {
     return response;
   }
 
-  getInvitations(int page, int perPage, String search) async {
-    var response = await ApiHelper().getTypeGet(
-      'invitations?page=$page&per_page=$perPage&search=$search',
+  inviteTeamPlayersList(int teamId, List<dynamic> params) async {
+    var response = await ApiHelper().getTypePostListJson(
+      'teams/$teamId/invitations',
+      params,
     );
+    log(response.toString());
+    return response;
+  }
+
+  getInvitations(int page, int perPage, [String search = '']) async {
+    String uri = 'invitations?page=$page&per_page=$perPage';
+    if (search.trim().isNotEmpty) {
+      uri += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    var response = await ApiHelper().getTypeGet(uri);
     log(response.toString());
     return response;
   }
@@ -249,7 +260,7 @@ class UserApis {
   }
 
   logout() async {
-    var response = await ApiHelper().getTypePostJson('user/logout', {});
+    var response = await ApiHelper().getTypePostJson('logout', {});
     log(response.toString());
     return response;
   }

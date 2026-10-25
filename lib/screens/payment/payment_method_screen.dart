@@ -15,11 +15,13 @@ import 'widgets/payment_option_tile.dart';
 class PaymentMethodScreen extends StatefulWidget {
   final Map<String, dynamic> tournament;
   final Map<String, dynamic> team;
+  final List<int> selectedPlayerIds;
 
   const PaymentMethodScreen({
     super.key,
     required this.tournament,
     required this.team,
+    required this.selectedPlayerIds,
   });
 
   @override
@@ -48,6 +50,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       // 1. Register Tournament
       final regResponse = await UserApis().registerTournament(tournamentId, {
         "team_id": teamId,
+        "team_player_ids": widget.selectedPlayerIds,
       });
 
       if (regResponse == null || regResponse['success'] != true) {

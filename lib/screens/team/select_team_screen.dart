@@ -6,6 +6,7 @@ import '../../core/widgets/glass_back_button.dart';
 import '../../core/globalefunction/global_functions.dart';
 import '../home/providers/home_provider.dart';
 import '../payment/tournament_registered_screen.dart';
+import '../../core/apiServices/user_api.dart';
 import 'register_tournament.dart';
 import 'widgets/team_card.dart';
 import 'widgets/edit_team_dialog.dart';
@@ -56,18 +57,48 @@ class SelectTeamScreen extends StatefulWidget {
 
 class _SelectTeamScreenState extends State<SelectTeamScreen> {
   int _selectedIndex = 0;
-  late Set<int> _selectedPlayerIndexes;
+  Set<int> _selectedPlayerIds = {};
+  Map<String, dynamic>? _selectedTeamDetails;
+  bool _isFetchingTeam = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedPlayerIndexes = {
-      for (var i = 0; i < dummyNavSquadPlayers.length; i++)
-        if (dummyNavSquadPlayers[i]['selected'] == true) i,
-    };
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HomeProvider>(context, listen: false).fetchTeams();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<HomeProvider>(context, listen: false);
+      await provider.fetchTeams();
+      if (provider.teamsList.isNotEmpty) {
+        _fetchTeamDetails(provider.teamsList.first['id']);
+      }
     });
+  }
+
+  Future<void> _fetchTeamDetails(dynamic teamId) async {
+    if (teamId == null) return;
+    setState(() {
+      _isFetchingTeam = true;
+      _selectedTeamDetails = null;
+      _selectedPlayerIds.clear();
+    });
+    try {
+      final res = await UserApis().getMyTeamDetails(teamId);
+      if (res != null && res['success'] == true && res['data'] != null) {
+        final data = res['data'];
+        setState(() {
+          _selectedTeamDetails = data;
+          final roster = List<dynamic>.from(data['roster'] ?? []);
+          _selectedPlayerIds = {
+            for (final player in roster)
+              if (player['team_player_id'] != null)
+                player['team_player_id'] as int,
+          };
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching team details: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingTeam = false);
+    }
   }
 
   void _openCreateTeam() {
@@ -79,18 +110,24 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
           maxPlayers: required,
         ),
       ),
-    );
+    ).then((_) {
+      if (mounted) {
+        Provider.of<HomeProvider>(context, listen: false).fetchTeams();
+      }
+    });
   }
 
   void _openAddPlayers(Map<String, dynamic> team) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddPlayersScreen(
-          team: team,
-          tournament: widget.tournament,
-        ),
+        builder: (_) =>
+            AddPlayersScreen(team: team, tournament: widget.tournament),
       ),
-    );
+    ).then((_) {
+      if (mounted) {
+        Provider.of<HomeProvider>(context, listen: false).fetchTeams();
+      }
+    });
   }
 
   void _handleDelete(Map<String, dynamic> team) {
@@ -188,7 +225,7 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                     GlassBackButton(onTap: () => Navigator.of(context).pop()),
                     const SizedBox(width: 14),
                     Text(
-                      'Select Your Team',
+                      'Select Your Teamm',
                       style: GoogleFonts.quicksand(
                         color: Colors.white,
                         fontSize: 18,
@@ -211,122 +248,204 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
 
                     final teams = provider.teamsList;
                     if (teams.isEmpty) {
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                        children: [
-                          _CreateTeamButton(onTap: () => _openCreateTeam()),
-                          const SizedBox(height: 40),
-                          Text(
-                            'No teams found.',
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white54,
-                              fontSize: 14,
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          await provider.fetchTeams();
+                        },
+                        color: AppColors.mintGreen,
+                        backgroundColor: const Color(0xFF161A24),
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                          children: [
+                            _CreateTeamButton(onTap: () => _openCreateTeam()),
+                            const SizedBox(height: 40),
+                            Text(
+                              'No teams found.',
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white54,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                          ],
+                        ),
                       );
                     }
 
                     final safeIndex = _selectedIndex.clamp(0, teams.length - 1);
                     final selectedTeam = teams[safeIndex];
-                    final selectedCount = int.tryParse(
+                    final selectedCount =
+                        int.tryParse(
                           selectedTeam['total_players']?.toString() ?? '0',
                         ) ??
                         0;
                     final isComplete = selectedCount >= requiredPlayers;
 
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                      children: [
-                        if (isComplete) ...[
-                          _CreateTeamButton(onTap: () => _openCreateTeam()),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Select Squad',
-                            style: GoogleFonts.quicksand(
-                              color: AppColors.amberAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ] else ...[
-                          Text(
-                            'Select Team',
-                            style: GoogleFonts.quicksand(
-                              color: AppColors.amberAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                        ...teams.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final team = entry.value;
-                          final count = int.tryParse(
-                                team['total_players']?.toString() ?? '0',
-                              ) ??
-                              0;
-                          final complete = count >= requiredPlayers;
-                          return TeamCard(
-                            team: team,
-                            selected: safeIndex == i,
-                            isComplete: complete,
-                            requiredPlayers: requiredPlayers,
-                            onAddPlayers: () => _openAddPlayers(team),
-                            onSelect: () => setState(() => _selectedIndex = i),
-                            onEdit: () => _handleEdit(team),
-                            onDelete: () => _handleDelete(team),
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        await provider.fetchTeams();
+                        if (provider.teamsList.isNotEmpty) {
+                          final newSafeIndex = _selectedIndex.clamp(
+                            0,
+                            provider.teamsList.length - 1,
                           );
-                        }),
-                        if (isComplete) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                'Players Available',
-                                style: GoogleFonts.quicksand(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          await _fetchTeamDetails(
+                            provider.teamsList[newSafeIndex]['id'],
+                          );
+                        }
+                      },
+                      color: AppColors.mintGreen,
+                      backgroundColor: const Color(0xFF161A24),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                        children: [
+                          if (isComplete) ...[
+                            _CreateTeamButton(onTap: () => _openCreateTeam()),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Select Squad',
+                              style: GoogleFonts.quicksand(
+                                color: AppColors.amberAccent,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
                               ),
-                              const Spacer(),
-                              Text(
-                                '${_selectedPlayerIndexes.length}/$requiredPlayers',
-                                style: GoogleFonts.quicksand(
-                                  color: AppColors.mintGreen,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            ),
+                            const SizedBox(height: 14),
+                          ] else ...[
+                            Text(
+                              'Select Team',
+                              style: GoogleFonts.quicksand(
+                                color: AppColors.amberAccent,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ...dummyNavSquadPlayers.asMap().entries.map((entry) {
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+                          ...teams.asMap().entries.map((entry) {
                             final i = entry.key;
-                            final player = entry.value;
-                            final selected = _selectedPlayerIndexes.contains(i);
-                            return _SquadPlayerTile(
-                              name: player['name']?.toString() ?? 'Player',
-                              role: player['role']?.toString() ?? '',
-                              selected: selected,
-                              onTap: () {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedPlayerIndexes.remove(i);
-                                  } else if (_selectedPlayerIndexes.length <
-                                      requiredPlayers) {
-                                    _selectedPlayerIndexes.add(i);
-                                  }
-                                });
+                            final team = entry.value;
+                            final count =
+                                int.tryParse(
+                                  team['total_players']?.toString() ?? '0',
+                                ) ??
+                                0;
+                            final complete = count >= requiredPlayers;
+                            return TeamCard(
+                              team: team,
+                              selected: safeIndex == i,
+                              isComplete: complete,
+                              requiredPlayers: requiredPlayers,
+                              onAddPlayers: () => _openAddPlayers(team),
+                              onSelect: () {
+                                if (_selectedIndex != i) {
+                                  setState(() => _selectedIndex = i);
+                                  _fetchTeamDetails(team['id']);
+                                }
                               },
+                              onEdit: () => _handleEdit(team),
+                              onDelete: () => _handleDelete(team),
                             );
                           }),
+                          if (isComplete) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  'Players Available',
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${_selectedPlayerIds.length}/$requiredPlayers',
+                                  style: GoogleFonts.quicksand(
+                                    color: AppColors.mintGreen,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (_isFetchingTeam)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              )
+                            else if (_selectedTeamDetails == null)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    "Failed to load team details.",
+                                    style: TextStyle(color: Colors.white54),
+                                  ),
+                                ),
+                              )
+                            else
+                              ...(_selectedTeamDetails!['roster']
+                                      as List<dynamic>)
+                                  .map((playerData) {
+                                    final player =
+                                        playerData as Map<String, dynamic>;
+                                    final teamPlayerId =
+                                        player['team_player_id'] as int?;
+                                    if (teamPlayerId == null)
+                                      return const SizedBox.shrink();
+
+                                    final selected = _selectedPlayerIds
+                                        .contains(teamPlayerId);
+
+                                    final userProfile =
+                                        player['profile'] ??
+                                        player['user']?['profile'];
+                                    final name =
+                                        userProfile?['full_name']?.toString() ??
+                                        player['player_name']?.toString() ??
+                                        'Player';
+                                    final isCaptain =
+                                        player['is_captain'] == true ||
+                                        player['role'] == 1;
+                                    final roleStr = isCaptain
+                                        ? 'Captain'
+                                        : 'Player';
+
+                                    return _SquadPlayerTile(
+                                      name: name,
+                                      role: roleStr,
+                                      selected: selected,
+                                      photoUrl:
+                                          userProfile?['profile_picture_url'] ??
+                                          userProfile?['profile_photo_url'],
+                                      onTap: () {
+                                        setState(() {
+                                          if (selected) {
+                                            _selectedPlayerIds.remove(
+                                              teamPlayerId,
+                                            );
+                                          } else if (_selectedPlayerIds.length <
+                                              requiredPlayers) {
+                                            _selectedPlayerIds.add(
+                                              teamPlayerId,
+                                            );
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }),
+                          ],
                         ],
-                      ],
+                      ),
                     );
                   },
                 ),
@@ -339,17 +458,28 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                     if (teams.isEmpty) return const SizedBox.shrink();
                     final safeIndex = _selectedIndex.clamp(0, teams.length - 1);
                     final team = teams[safeIndex];
-                    final count = int.tryParse(
+                    final count =
+                        int.tryParse(
                           team['total_players']?.toString() ?? '0',
                         ) ??
                         0;
                     final isComplete = count >= requiredPlayers;
-                    final label = isComplete ? 'Team Ready' : 'Add Team Players';
+                    final label = isComplete
+                        ? 'Team Ready'
+                        : 'Add Team Players';
 
                     return GestureDetector(
                       onTap: () {
-                        if (!isComplete) {
-                          _openAddPlayers(team);
+                        if (!isComplete ||
+                            _selectedPlayerIds.length != requiredPlayers) {
+                          if (isComplete) {
+                            MCP.showMessage(
+                              context,
+                              "Please select exactly $requiredPlayers players.",
+                            );
+                          } else {
+                            _openAddPlayers(team);
+                          }
                           return;
                         }
                         Navigator.of(context).push(
@@ -357,6 +487,7 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                             builder: (_) => TournamentRegisteredScreen(
                               tournament: widget.tournament,
                               team: team,
+                              selectedPlayerIds: _selectedPlayerIds.toList(),
                             ),
                           ),
                         );
@@ -370,7 +501,9 @@ class _SelectTeamScreenState extends State<SelectTeamScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF7A1E).withValues(alpha: 0.45),
+                              color: const Color(
+                                0xFFFF7A1E,
+                              ).withValues(alpha: 0.45),
                               blurRadius: 22,
                               offset: const Offset(0, 10),
                             ),
@@ -452,12 +585,14 @@ class _SquadPlayerTile extends StatelessWidget {
     required this.role,
     required this.selected,
     required this.onTap,
+    this.photoUrl,
   });
 
   final String name;
   final String role;
   final bool selected;
   final VoidCallback onTap;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -477,8 +612,16 @@ class _SquadPlayerTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF2A241C),
               borderRadius: BorderRadius.circular(12),
+              image: photoUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(photoUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Icon(Icons.person_rounded, color: Colors.white54),
+            child: photoUrl == null
+                ? const Icon(Icons.person_rounded, color: Colors.white54)
+                : null,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -510,13 +653,19 @@ class _SquadPlayerTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
-                border: selected ? null : Border.all(color: AppColors.glassBorderStrong),
+                border: selected
+                    ? null
+                    : Border.all(color: AppColors.glassBorderStrong),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (selected) ...[
-                    const Icon(Icons.check_rounded, color: Colors.white, size: 15),
+                    const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 15,
+                    ),
                     const SizedBox(width: 4),
                   ],
                   Text(

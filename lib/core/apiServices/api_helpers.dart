@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:sporto/core/apiServices/api_constants.dart';
+import 'package:sporto/routes/app_routes.dart';
 
 final storage = GetStorage();
 
@@ -17,8 +19,15 @@ class ApiHelper {
     _isSessionExpired = true;
 
     await storage.remove('authToken');
-
     log("Session Expired - User Logged Out");
+
+    // Force navigation to Login screen
+    Get.offAllNamed(AppRoutes.login);
+
+    // Reset flag after a short delay so it can handle subsequent logouts in the same app lifecycle
+    Future.delayed(const Duration(seconds: 3), () {
+      _isSessionExpired = false;
+    });
   }
 
   /// ================= STATUS CHECK =================
@@ -81,6 +90,58 @@ class ApiHelper {
   Future<dynamic> getTypePostJson(
     String uri,
     Map<String, dynamic> params,
+  ) async {
+    var authCode = storage.read('authToken');
+
+    log("AUTH TOKEN -> $authCode");
+
+    var url = apiBaseUrl + uri;
+    log('URL -> $url');
+
+    var request = http.Request('POST', Uri.parse(url));
+
+    Map<String, String> headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    if (authCode != null && authCode.toString().isNotEmpty) {
+      headers['Authorization'] = 'Bearer $authCode';
+    }
+
+    request.headers.addAll(headers);
+    request.body = json.encode(params);
+
+    log('BODY -> ${request.body}');
+
+    try {
+      http.StreamedResponse response = await request.send();
+      var jsonResponse = await response.stream.bytesToString();
+
+      log('STATUS CODE -> ${response.statusCode}');
+      log('RESPONSE -> $jsonResponse');
+
+      bool isValid = await _handleResponseStatus(response.statusCode);
+
+      if (!isValid) {
+        return {
+          'session_expired': true,
+          'message': 'Session expired',
+          'errorRes': json.decode(jsonResponse),
+        };
+      }
+
+      return json.decode(jsonResponse);
+    } on SocketException {
+      return {'error': 'No Internet Connection'};
+    } catch (e) {
+      return {'error': 'Unexpected error: $e'};
+    }
+  }
+
+  Future<dynamic> getTypePostListJson(
+    String uri,
+    List<dynamic> params,
   ) async {
     var authCode = storage.read('authToken');
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/glass_back_button.dart';
-import '../../../models/live_match_detail_info.dart';
 import '../../../models/my_tournament_info.dart';
 import '../../../models/profile_info.dart';
 import '../../Matches/lmatch_detail_screen.dart';
@@ -50,7 +49,7 @@ class _AllTournamentsScreenState extends State<AllTournamentsScreen> {
     if (tournament.status == MyTournamentStatus.live) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const LiveMatchDetailScreen(match: dummyLiveMatchDetail, matchId: 3665),
+          builder: (_) => const LiveMatchDetailScreen(matchId: 3665),
         ),
       );
       return;

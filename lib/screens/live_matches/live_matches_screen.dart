@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/completed_match_detail_info.dart';
-import '../../models/live_match_detail_info.dart';
 import '../../models/match_info.dart';
 import '../Matches/completed_match_detail_screen.dart';
 import '../Matches/lmatch_detail_screen.dart';
@@ -66,7 +65,11 @@ class _LiveMatchesScreenState extends State<LiveMatchesScreen> {
   }
 
   List<dynamic> _sports(HomeProvider provider) {
-    return provider.sportsList;
+    if (provider.sportsList.isEmpty) return [];
+    return [
+      {'name': 'All', 'id': null},
+      ...provider.sportsList
+    ];
   }
 
   void _onScroll() {
@@ -173,7 +176,6 @@ class _LiveMatchesScreenState extends State<LiveMatchesScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LiveMatchDetailScreen(
-          match: dummyLiveMatchDetail,
           matchId: matchData['id'] as int? ?? 3665,
         ),
       ),
@@ -389,27 +391,39 @@ class _LiveMatchesScreenState extends State<LiveMatchesScreen> {
             Expanded(
               child: loading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                  : cards.length <= (_tabIndex == 0 ? 1 : 0)
-                      ? Center(
-                          child: Text(
-                            'Nothing to show yet.',
-                            style: GoogleFonts.quicksand(color: Colors.white54),
-                          ),
-                        )
-                      : ListView(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          children: [
-                            ...cards,
-                            if (loadingMore)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(
-                                  child: CircularProgressIndicator(color: AppColors.primary),
+                  : RefreshIndicator(
+                      onRefresh: () async => _fetchAll(isRefresh: true),
+                      color: AppColors.mintGreen,
+                      backgroundColor: AppColors.secondary,
+                      child: cards.length <= (_tabIndex == 0 ? 1 : 0)
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                                Center(
+                                  child: Text(
+                                    'Nothing to show yet.',
+                                    style: GoogleFonts.quicksand(color: Colors.white54),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
+                              ],
+                            )
+                          : ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              controller: _scrollController,
+                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              children: [
+                                ...cards,
+                                if (loadingMore)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Center(
+                                      child: CircularProgressIndicator(color: AppColors.primary),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
             ),
           ],
         );

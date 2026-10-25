@@ -157,9 +157,12 @@ class AuthProvider extends ChangeNotifier {
         _successMessage = response['message'] ?? 'Login successful.';
 
         final data = response['data'] as Map<String, dynamic>?;
-        if (data != null && data['token'] != null) {
-          final storage = GetStorage();
-          await storage.write('authToken', data['token']);
+        if (data != null) {
+          if (data['token'] != null) {
+            final storage = GetStorage();
+            await storage.write('authToken', data['token']);
+          }
+          saveCheckResponce(data);
         }
 
         _setLoading(false);

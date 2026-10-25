@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'providers/home_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../routes/app_routes.dart';
@@ -8,8 +10,23 @@ import 'team_invitations_screen.dart';
 
 /// Opened from Home → Needs Your Attention. Dark Sporto version of the
 /// welcome / shortcuts hub (invitations, tournaments, playground, teams).
-class AttentionHubScreen extends StatelessWidget {
+class AttentionHubScreen extends StatefulWidget {
   const AttentionHubScreen({super.key});
+
+  @override
+  State<AttentionHubScreen> createState() => _AttentionHubScreenState();
+}
+
+class _AttentionHubScreenState extends State<AttentionHubScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<HomeProvider>().fetchInvitations(isRefresh: true);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +49,15 @@ class AttentionHubScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   children: [
-                    _InviteRow(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const TeamInvitationsScreen()),
+                    Consumer<HomeProvider>(
+                      builder: (context, homeProvider, _) {
+                        return _InviteRow(
+                          count: homeProvider.pendingInvitationsCount,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const TeamInvitationsScreen()),
+                            );
+                          },
                         );
                       },
                     ),
@@ -154,12 +176,20 @@ class _PlaygroundPage extends StatelessWidget {
 }
 
 class _InviteRow extends StatelessWidget {
-  const _InviteRow({required this.onTap});
+  const _InviteRow({
+    required this.onTap,
+    this.count = 0,
+  });
 
   final VoidCallback onTap;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
+    final subText = count == 0
+        ? 'No pending invitations'
+        : '$count pending invitation${count == 1 ? '' : 's'}';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -199,7 +229,7 @@ class _InviteRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '3 pending invitations',
+                    subText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),

@@ -65,7 +65,63 @@ class _TeamUpRegisterScreenState extends State<TeamUpRegisterScreen> {
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
               primary: AppColors.amberAccent,
+              onPrimary: Colors.black,
               surface: Color(0xFF161A22),
+              onSurface: Colors.white,
+              onSurfaceVariant: Colors.white70,
+            ),
+            dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF161A22)),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: const Color(0xFF161A22),
+              headerBackgroundColor: const Color(0xFF161A22),
+              headerForegroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.white38;
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.black;
+                }
+                return Colors.white;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.amberAccent;
+                }
+                return null;
+              }),
+              yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.white38;
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.black;
+                }
+                return Colors.white;
+              }),
+              yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.amberAccent;
+                }
+                return null;
+              }),
+              todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.black;
+                }
+                return AppColors.amberAccent;
+              }),
+              weekdayStyle: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: Colors.white70,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.amberAccent,
+              ),
             ),
           ),
           child: child!,
