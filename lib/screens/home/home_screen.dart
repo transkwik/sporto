@@ -23,7 +23,6 @@ import 'attention_hub_screen.dart';
 import '../team_up/team_up_screen.dart';
 import '../tournament/tournament_detail_screen.dart';
 import '../tournament/tournaments_list_screen.dart';
-import 'prize_details_screen.dart';
 import 'widgets/ads_banner.dart';
 import 'widgets/attention_banner.dart';
 import 'widgets/prize_details_banner.dart';
@@ -118,6 +117,7 @@ class _HomeTabBody extends StatefulWidget {
 
 class _HomeTabBodyState extends State<_HomeTabBody> {
   int _selectedCategory = 0;
+  int _prizeRefresh = 0;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -185,6 +185,9 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
 
     // Refresh pending invitations
     homeProvider.fetchInvitations(isRefresh: true);
+
+    // Reload the prize banner
+    if (mounted) setState(() => _prizeRefresh++);
   }
 
   @override
@@ -242,14 +245,7 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
           },
         ),
         const SizedBox(height: 12),
-        PrizeDetailsBanner(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PrizeDetailsScreen()),
-            );
-          },
-        ),
-        const SizedBox(height: 20),
+        LatestPrizeBanner(key: ValueKey(_prizeRefresh)),
         Consumer<HomeProvider>(
           builder: (context, homeProvider, child) {
             final liveMatches = homeProvider.liveMatchesList;

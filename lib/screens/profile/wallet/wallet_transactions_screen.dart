@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/wallet_utils.dart';
 import '../../../core/widgets/glass_back_button.dart';
-import '../../../models/wallet_transaction_info.dart';
+import 'providers/wallet_provider.dart';
 import 'transaction_details_screen.dart';
 import '../bank/withdraw_to_bank_screen.dart';
 
 /// Profile → Wallet & Transactions: balance, history actions, settlements.
-class WalletTransactionsScreen extends StatelessWidget {
-  const WalletTransactionsScreen({
-    super.key,
-    this.balance = dummyWalletBalance,
-    this.transactions = dummyWalletTransactions,
-  });
+class WalletTransactionsScreen extends StatefulWidget {
+  const WalletTransactionsScreen({super.key});
 
-  final String balance;
-  final List<WalletTransaction> transactions;
+  @override
+  State<WalletTransactionsScreen> createState() => _WalletTransactionsScreenState();
+}
 
-  void _openDetails(BuildContext context, WalletTransaction txn) {
+class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<WalletProvider>();
+    provider.reset();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) provider.fetchWallet();
+    });
+  }
+
+  void _openDetails(BuildContext context, Map<String, dynamic> txn) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => TransactionDetailsScreen(transaction: txn)),
     );
@@ -55,7 +65,25 @@ class WalletTransactionsScreen extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ListView(
+                child: Consumer<WalletProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: AppColors.mintGreen),
+                      );
+                    }
+                    if (prov.error != null) {
+                      return _MessageView(
+                        message: prov.error!,
+                        onRetry: prov.fetchWallet,
+                      );
+                    }
+                    return RefreshIndicator(
+                      color: AppColors.mintGreen,
+                      backgroundColor: AppColors.secondary,
+                      onRefresh: () => prov.fetchWallet(refresh: true),
+                      child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   children: [
                     Container(
@@ -81,7 +109,7 @@ class WalletTransactionsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  balance,
+                                  prov.balanceLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.quicksand(
@@ -148,14 +176,32 @@ class WalletTransactionsScreen extends StatelessWidget {
                       style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
                     ),
                     const SizedBox(height: 12),
-                    for (final txn in transactions) ...[
-                      _SettlementRow(
-                        transaction: txn,
-                        onTap: () => _openDetails(context, txn),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                    if (prov.transactions.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.receipt_long_outlined, color: Colors.white24, size: 44),
+                            const SizedBox(height: 10),
+                            Text(
+                              'No transactions yet',
+                              style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      for (final txn in prov.transactions) ...[
+                        _SettlementRow(
+                          transaction: txn,
+                          onTap: () => _openDetails(context, txn),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                   ],
+                ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -214,12 +260,15 @@ class _ActionChip extends StatelessWidget {
 class _SettlementRow extends StatelessWidget {
   const _SettlementRow({required this.transaction, required this.onTap});
 
-  final WalletTransaction transaction;
+  final Map<String, dynamic> transaction;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.credit ? AppColors.mintGreen : const Color(0xFFE85A6B);
+    final t = transaction;
+    final amountColor = WalletUtils.amountColor(t);
+    final description = WalletUtils.description(t);
+    final date = WalletUtils.listDate(t);
 
     return GestureDetector(
       onTap: onTap,
@@ -235,7 +284,7 @@ class _SettlementRow extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(width: 3, color: transaction.accent),
+                Container(width: 3, color: WalletUtils.accent(t)),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -249,7 +298,7 @@ class _SettlementRow extends StatelessWidget {
                             color: const Color(0xFF141820),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(transaction.icon, color: Colors.white70, size: 18),
+                          child: Icon(WalletUtils.icon(t), color: Colors.white70, size: 18),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -257,7 +306,7 @@ class _SettlementRow extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                transaction.title,
+                                WalletUtils.title(t),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.quicksand(
@@ -266,13 +315,15 @@ class _SettlementRow extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                transaction.subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5),
-                              ),
+                              if (description.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  description,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 11.5),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -281,18 +332,20 @@ class _SettlementRow extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${transaction.credit ? '+' : '-'} ${transaction.amountLabel}',
+                              WalletUtils.signedAmount(t),
                               style: GoogleFonts.quicksand(
                                 color: amountColor,
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              transaction.dateLabel,
-                              style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 11),
-                            ),
+                            if (date.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                date,
+                                style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 11),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -302,6 +355,53 @@ class _SettlementRow extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageView extends StatelessWidget {
+  const _MessageView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, color: Colors.white38, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3A93D),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.black87,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

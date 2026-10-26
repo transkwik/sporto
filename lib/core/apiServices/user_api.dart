@@ -273,4 +273,85 @@ class UserApis {
     log(response.toString());
     return response;
   }
+
+  getMyPrizes(int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet(
+      'prizes/my-prizes?page=$page&per_page=$perPage',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getTournamentPrizes(int tournamentId) async {
+    var response = await ApiHelper().getTypeGet(
+      'tournaments/$tournamentId/prizes',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getPrizeDistribution(int tournamentId) async {
+    var response = await ApiHelper().getTypeGet(
+      'tournaments/$tournamentId/prize-distribution',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getWallet() async {
+    var response = await ApiHelper().getTypeGet('wallet');
+    log(response.toString());
+    return response;
+  }
+
+  getWalletTransactions(int page, int perPage) async {
+    var response = await ApiHelper().getTypeGet(
+      'wallet/transactions?page=$page&per_page=$perPage',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  getBankList({String type = 'BANK'}) async {
+    var response = await ApiHelper().getTypeGet(
+      'bank/list-bank-details?type=$type',
+    );
+    log(response.toString());
+    return response;
+  }
+
+  addBankDetails(Map<String, dynamic> params) async {
+    var response = await ApiHelper().getTypePostJson(
+      'bank/add-bank-details',
+      params,
+    );
+    log(response.toString());
+    return response;
+  }
+
+  updateBankDetails(int id, Map<String, dynamic> params) async {
+    var response = await ApiHelper().getTypePutJson(
+      'bank/update-bank-details/$id',
+      params,
+    );
+    log(response.toString());
+    return response;
+  }
+
+  setDefaultBank(int id) async {
+    var response = await ApiHelper().getTypePostJson(
+      'bank/set-default-bank/$id',
+      {},
+    );
+    log(response.toString());
+    return response;
+  }
+
+  deleteBankDetails(int id) async {
+    var response = await ApiHelper().getTypeDelete(
+      'bank/delete-bank-details/$id',
+    );
+    log(response.toString());
+    return response;
+  }
 }

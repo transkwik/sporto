@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/wallet_utils.dart';
 import '../../../core/widgets/glass_back_button.dart';
-import '../../../models/wallet_transaction_info.dart';
 
-/// Wallet list → a single settlement's receipt.
+/// Wallet list → a single wallet transaction's receipt. [transaction] is the
+/// raw object from `GET user/wallet/transactions`.
 class TransactionDetailsScreen extends StatelessWidget {
   const TransactionDetailsScreen({super.key, required this.transaction});
 
-  final WalletTransaction transaction;
+  final Map<String, dynamic> transaction;
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.credit ? AppColors.mintGreen : Colors.white;
-    final signedAmount = '${transaction.credit ? '+' : '-'} ${transaction.amountLabel}';
+    final t = transaction;
+    final accent = WalletUtils.accent(t);
+    final amountColor = WalletUtils.amountColor(t);
+    final directionLabel = WalletUtils.directionLabel(t);
+    final isCredit = WalletUtils.isCredit(t);
+    final description = WalletUtils.description(t);
+    final typeLabel = WalletUtils.typeLabel(t);
+    final listDate = WalletUtils.listDate(t);
+    final detailDate = WalletUtils.detailDate(t);
+    final headerSubtitle = [
+      WalletUtils.reference(t),
+      if (listDate.isNotEmpty) listDate,
+    ].join('  •  ');
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
@@ -43,7 +55,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${transaction.id}  •  ${transaction.dateLabel}',
+                            headerSubtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
@@ -76,11 +88,11 @@ class TransactionDetailsScreen extends StatelessWidget {
                               color: Color(0xFF141820),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(transaction.icon, color: Colors.white, size: 22),
+                            child: Icon(WalletUtils.icon(t), color: Colors.white, size: 22),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            signedAmount,
+                            WalletUtils.signedAmount(t),
                             style: GoogleFonts.quicksand(
                               color: amountColor,
                               fontSize: 28,
@@ -89,112 +101,92 @@ class TransactionDetailsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            transaction.title,
+                            WalletUtils.title(t),
                             style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
                           ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppColors.mintGreen.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.check_circle, color: AppColors.mintGreen, size: 14),
-                                const SizedBox(width: 5),
-                                Text(
-                                  transaction.status,
-                                  style: GoogleFonts.quicksand(
-                                    color: AppColors.mintGreen,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                          if (directionLabel.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isCredit == false
+                                        ? Icons.arrow_circle_up_rounded
+                                        : Icons.arrow_circle_down_rounded,
+                                    color: accent,
+                                    size: 14,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    directionLabel,
+                                    style: GoogleFonts.quicksand(
+                                      color: accent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                           const SizedBox(height: 18),
-                          _MetaRow(label: 'Transaction Ref', value: transaction.id),
-                          const SizedBox(height: 10),
-                          _MetaRow(label: 'Payment Method', value: transaction.paymentMethod),
-                          const SizedBox(height: 10),
-                          _MetaRow(label: 'Direction', value: transaction.direction),
+                          _MetaRow(label: 'Transaction Ref', value: WalletUtils.reference(t)),
+                          if (typeLabel.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _MetaRow(label: 'Type', value: typeLabel),
+                          ],
+                          if (directionLabel.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _MetaRow(label: 'Direction', value: directionLabel),
+                          ],
+                          if (detailDate.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _MetaRow(label: 'Date', value: detailDate),
+                          ],
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Description',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoCard(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  transaction.descriptionTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.quicksand(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  transaction.descriptionLine,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            transaction.amountLabel,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        'Description',
+                        style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Tournament Details',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoCard(
-                      child: Row(
-                        children: [
-                          Icon(transaction.icon, color: Colors.white70, size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              transaction.tournamentLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 10),
+                      _InfoCard(
+                        child: Row(
+                          children: [
+                            Icon(WalletUtils.icon(t), color: Colors.white70, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                description,
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              WalletUtils.amountLabel(t),
                               style: GoogleFonts.quicksand(
                                 color: Colors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

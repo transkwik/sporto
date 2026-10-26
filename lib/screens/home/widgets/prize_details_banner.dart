@@ -1,15 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/apiServices/user_api.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/prize_details_info.dart';
+import '../../../core/utils/prize_utils.dart';
+import '../prize_details_screen.dart';
 
-/// Home dashboard win card above Needs Your Attention.
+/// Loads the user's latest prize payout and shows [PrizeDetailsBanner] for it.
+/// Renders nothing while loading, on error, or when the user has no prizes.
+/// Change [Key] (e.g. via a refresh counter) to reload.
+class LatestPrizeBanner extends StatefulWidget {
+  const LatestPrizeBanner({super.key});
+
+  @override
+  State<LatestPrizeBanner> createState() => _LatestPrizeBannerState();
+}
+
+class _LatestPrizeBannerState extends State<LatestPrizeBanner> {
+  Map<String, dynamic>? _payout;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await UserApis().getMyPrizes(1, 20);
+      if (res is! Map || res['success'] != true || res['data'] is! List) return;
+      Map<String, dynamic>? pick;
+      for (final item in res['data'] as List) {
+        if (item is! Map) continue;
+        final p = Map<String, dynamic>.from(item);
+        if (PrizeUtils.tournamentId(p) == null) continue;
+        // Prefer a payout still in progress; otherwise the first (latest) one.
+        final s = PrizeUtils.status(p);
+        if (s == PayoutStatus.pending || s == PayoutStatus.processing) {
+          pick = p;
+          break;
+        }
+        pick ??= p;
+      }
+      if (!mounted) return;
+      setState(() => _payout = pick);
+    } catch (_) {
+      // Banner is optional; stay hidden on failure.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _payout;
+    if (p == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: PrizeDetailsBanner(
+        payout: p,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PrizeDetailsScreen(
+                tournamentId: PrizeUtils.tournamentId(p)!,
+                tournamentName: PrizeUtils.tournamentName(p),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Home dashboard prize card above Needs Your Attention.
 class PrizeDetailsBanner extends StatelessWidget {
-  const PrizeDetailsBanner({super.key, this.onTap, this.details = dummyPrizeDetails});
+  const PrizeDetailsBanner({super.key, this.onTap, required this.payout});
 
   final VoidCallback? onTap;
-  final PrizeDetailsInfo details;
+  final Map<String, dynamic> payout;
+
+  String get _statusText => switch (PrizeUtils.status(payout)) {
+        PayoutStatus.credited => 'Your prize has been credited.',
+        PayoutStatus.failed => 'Your prize payout failed.',
+        PayoutStatus.processing => 'Your prize is being processed.',
+        PayoutStatus.pending => 'Your prize is pending.',
+      };
 
   static const _gold = Color(0xFFE3A93D);
 
@@ -75,7 +150,7 @@ class PrizeDetailsBanner extends StatelessWidget {
                           const Icon(Icons.emoji_events_rounded, color: _gold, size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            'Tournament Completed!',
+                            'Prize Won!',
                             style: GoogleFonts.quicksand(
                               color: _gold,
                               fontSize: 12,
@@ -89,7 +164,7 @@ class PrizeDetailsBanner extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(right: 72),
                       child: Text(
-                        details.tournamentTitle,
+                        PrizeUtils.tournamentName(payout),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.quicksand(
@@ -112,9 +187,9 @@ class PrizeDetailsBanner extends StatelessWidget {
                             height: 1.25,
                           ),
                           children: [
-                            const TextSpan(text: 'Your team '),
+                            const TextSpan(text: 'You won '),
                             TextSpan(
-                              text: details.winningTeamName,
+                              text: PrizeUtils.title(payout),
                               style: GoogleFonts.quicksand(
                                 color: _gold,
                                 fontSize: 12.5,
@@ -122,7 +197,7 @@ class PrizeDetailsBanner extends StatelessWidget {
                                 height: 1.25,
                               ),
                             ),
-                            const TextSpan(text: ' has won the tournament!'),
+                            TextSpan(text: ' · ${PrizeUtils.formatAmount(payout)}'),
                           ],
                         ),
                         maxLines: 2,
@@ -136,7 +211,7 @@ class PrizeDetailsBanner extends StatelessWidget {
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
-                            'Your prize is being processed.',
+                            _statusText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.quicksand(

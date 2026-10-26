@@ -4,7 +4,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/prize_details_info.dart';
 import '../profile/wallet/wallet_transactions_screen.dart';
-import 'prize_details_screen.dart';
 
 /// Prize Distribution → See Your Credit.
 class PrizeCreditedScreen extends StatelessWidget {
@@ -251,13 +250,7 @@ class PrizeCreditedScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => PrizeDetailsScreen(details: d),
-                          ),
-                        );
-                      },
+                      onTap: () => Navigator.of(context).pop(),
                       child: Container(
                         width: double.infinity,
                         height: 48,
