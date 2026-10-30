@@ -25,6 +25,7 @@ class MyTournamentMatchResult {
     required this.teamB,
     required this.scoreB,
     this.matchLabel = 'League — Match 1',
+    this.rawMatch,
   });
 
   final String teamA;
@@ -32,6 +33,7 @@ class MyTournamentMatchResult {
   final String teamB;
   final String scoreB;
   final String matchLabel;
+  final Map<String, dynamic>? rawMatch;
 }
 
 /// One tournament the user is in, shown on Profile → My Tournaments.

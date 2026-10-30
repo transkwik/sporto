@@ -24,9 +24,13 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
 
   static const _filters = dummyProfileSports;
   static const _tabs = [
-    (MyTournamentStatus.live, 'Live', '2'),
-    (MyTournamentStatus.upcoming, 'Upcoming', '1'),
-    (MyTournamentStatus.completed, 'Completed', '3'),
+    (MyTournamentStatus.live, 'Live', '${AppColors.STATUS_IN_PROGRESS}'),
+    (MyTournamentStatus.upcoming, 'Upcoming', '${AppColors.STATUS_UPCOMING}'),
+    (
+      MyTournamentStatus.completed,
+      'Completed',
+      '${AppColors.STATUS_COMPLETED}',
+    ),
   ];
 
   final List<MyTournamentInfo> _items = [];
@@ -88,14 +92,17 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
         if (data != null) {
           final mappedData = data.map((e) {
             final json = e as Map<String, dynamic>;
-            final statusInt = json['status'] as int? ?? 0;
+            final statusInt =
+                int.tryParse(json['status']?.toString() ?? '') ?? 0;
             MyTournamentStatus computedStatus;
-            if (statusInt == 1) {
+            if (statusInt == AppColors.STATUS_UPCOMING) {
               computedStatus = MyTournamentStatus.upcoming;
-            } else if (statusInt == 2) {
+            } else if (statusInt == AppColors.STATUS_IN_PROGRESS) {
               computedStatus = MyTournamentStatus.live;
-            } else {
+            } else if (statusInt == AppColors.STATUS_COMPLETED) {
               computedStatus = MyTournamentStatus.completed;
+            } else {
+              computedStatus = _tab;
             }
 
             final teamA =

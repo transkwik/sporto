@@ -67,6 +67,7 @@ class CompletedMatchDetailInfo {
       tournamentName: title,
       location: matchData['city']?.toString() ??
           matchData['location']?.toString() ??
+          matchData['venue']?['location']?.toString() ??
           match?['city']?.toString() ??
           'Hyderabad',
       dateShort: dateShort.isNotEmpty ? dateShort : '8 Aug Today',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/glass_back_button.dart';
+import '../../../models/match_data_parser.dart';
 import '../../../models/my_tournament_info.dart';
 import '../../../core/apiServices/user_api.dart';
 import '../../tournament/widgets/tournament_stat_box.dart';
@@ -24,8 +25,17 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
   Map<String, dynamic>? _apiData;
   List<MyTournamentPlayerStat> _squad = [];
   List<MyTournamentMatchResult> _matches = [];
+  String _playedValue = '0';
+  String _wonValue = '0';
+  String _lostValue = '0';
+  String _finalRankValue = '—';
 
   MyTournamentInfo get t => widget.tournament;
+
+  static const List<String> _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
 
   @override
   void initState() {
@@ -34,42 +44,136 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
   }
 
   Future<void> _fetchDetails() async {
-    final response = await UserApis().getTournamentDetail(int.parse(widget.tournament.id));
-    if (response != null && response['success'] == true) {
+    final tournamentId = int.tryParse(widget.tournament.id);
+    if (tournamentId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final response = await UserApis().getTournamentDetail(tournamentId);
+    if (response != null && response['success'] == true && response['data'] is Map<String, dynamic>) {
       final data = response['data'] as Map<String, dynamic>;
-      
-      // Parse Squad
-      final membersList = data['my_registration']?['team']?['members'] as List<dynamic>? ?? [];
+
+      final myReg = (data['my_registration'] ?? data['registration']?['my_registration']) as Map<String, dynamic>?;
+      final myTeam = myReg?['team'] as Map<String, dynamic>?;
+      final myTeamId = (myReg?['team_id'] ?? myTeam?['id'])?.toString();
+      final myTeamName = (myReg?['team_name'] ?? myTeam?['name'])?.toString() ?? '';
+
+      // Parse Squad from my_registration.team.members
+      final membersList = myTeam?['members'] as List<dynamic>? ?? [];
       _squad = membersList.map((m) {
         final member = m as Map<String, dynamic>;
+        final isCaptain = member['is_captain'] == true;
+        final roleLabel = isCaptain ? 'Captain' : 'Player';
         return MyTournamentPlayerStat(
           name: member['player_name']?.toString() ?? 'Unknown',
-          role: member['is_captain'] == true ? 'Captain' : 'Player',
-          runs: 0,
-          wickets: 0,
+          role: myTeamName.isNotEmpty ? '$roleLabel • $myTeamName' : roleLabel,
+          runs: int.tryParse(member['runs']?.toString() ?? '') ?? 0,
+          wickets: int.tryParse(member['wickets']?.toString() ?? '') ?? 0,
+          isYou: isCaptain,
         );
       }).toList();
 
-      // Parse Matches
+      // Parse Matches from matches.items
       final matchesList = data['matches']?['items'] as List<dynamic>? ?? [];
+      int myPlayed = 0;
+      int myWon = 0;
+      int myLost = 0;
+      String? lastMyRound;
+
       _matches = matchesList.map((m) {
         final item = m as Map<String, dynamic>;
-        final match = item['match'] ?? {};
-        final teams = item['teams'] as List<dynamic>? ?? [];
-        
-        String teamA = 'TBD';
-        String teamB = 'TBD';
-        if (teams.isNotEmpty) teamA = teams[0]['name']?.toString() ?? 'TBD';
-        if (teams.length > 1) teamB = teams[1]['name']?.toString() ?? 'TBD';
+        final teamA = MatchDataParser.team(item, isA: true);
+        final teamB = MatchDataParser.team(item, isA: false);
+        final scoreA = MatchDataParser.score(item, teamA.id);
+        final scoreB = MatchDataParser.score(item, teamB.id);
+
+        final roundName = item['round']?['name']?.toString() ??
+            item['stage']?['name']?.toString() ??
+            'Match';
+        final matchNum = item['match_number'] ?? item['match']?['match_number'] ?? '';
+        final statusKey = (item['status_key'] ?? item['match']?['status'])?.toString().toUpperCase() ?? '';
+        final statusLabel = item['status_label']?.toString() ?? 'Upcoming';
+
+        String resultPart = statusLabel;
+        if (statusKey == 'COMPLETED') {
+          final winner = MatchDataParser.winnerName(item);
+          if (winner != 'No result' && winner != 'Match Tied' && winner != 'Match Drawn') {
+            resultPart = '$winner won';
+          } else {
+            resultPart = winner;
+          }
+        }
+
+        // Track stats for user's registered team
+        if (myTeamId != null && (teamA.id == myTeamId || teamB.id == myTeamId)) {
+          lastMyRound = roundName;
+          if (statusKey == 'COMPLETED') {
+            myPlayed++;
+            final winnerId = (item['result']?['winner_team_id'] ?? item['match']?['winner_team_id'])?.toString();
+            if (winnerId != null) {
+              if (winnerId == myTeamId) {
+                myWon++;
+              } else {
+                myLost++;
+              }
+            }
+          }
+        }
+
+        final formattedScoreA = scoreA.hasData ? scoreA.score : 'Yet to bat';
+        final formattedScoreB = scoreB.hasData ? scoreB.score : 'Yet to bat';
+
+        final matchNumStr = matchNum.toString().isNotEmpty ? 'Match $matchNum' : '';
+        final labelParts = [
+          if (roundName.isNotEmpty) roundName,
+          if (matchNumStr.isNotEmpty) matchNumStr,
+        ];
 
         return MyTournamentMatchResult(
-          matchLabel: 'Match ${match['match_number'] ?? 0} - ${match['status'] ?? 'Upcoming'}',
-          teamA: teamA,
-          teamB: teamB,
-          scoreA: 'Yet to bat',
-          scoreB: 'Yet to bat',
+          matchLabel: labelParts.isNotEmpty ? labelParts.join(' — ') : resultPart,
+          teamA: teamA.name,
+          teamB: teamB.name,
+          scoreA: formattedScoreA,
+          scoreB: formattedScoreB,
+          rawMatch: item,
         );
       }).toList();
+
+      // Compute Played / Won / Lost / Final Rank
+      if (myTeamId != null && myPlayed > 0) {
+        _playedValue = '$myPlayed';
+        _wonValue = '$myWon';
+        _lostValue = '$myLost';
+      } else {
+        final totalMatches = data['match_summary']?['total'] ?? matchesList.length;
+        final completedMatches = data['match_summary']?['completed'] ?? 0;
+        _playedValue = '$totalMatches';
+        _wonValue = '$completedMatches';
+        _lostValue = '0';
+      }
+
+      final resultMap = data['result'] as Map<String, dynamic>?;
+      final winnerTeamId = (resultMap?['winner'] is Map
+              ? resultMap!['winner']['team_id']
+              : null)
+          ?.toString();
+      final runnerUpTeamId = (resultMap?['runner_up'] is Map
+              ? resultMap!['runner_up']['team_id']
+              : null)
+          ?.toString();
+
+      if (myTeamId != null && winnerTeamId == myTeamId) {
+        _finalRankValue = '#1';
+      } else if (myTeamId != null && runnerUpTeamId == myTeamId) {
+        _finalRankValue = '#2';
+      } else if (lastMyRound != null && lastMyRound!.toLowerCase().contains('semi')) {
+        _finalRankValue = 'SF';
+      } else if (lastMyRound != null && lastMyRound!.isNotEmpty) {
+        _finalRankValue = lastMyRound!;
+      } else {
+        _finalRankValue = '—';
+      }
 
       setState(() {
         _apiData = data;
@@ -80,6 +184,104 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  String _resolveTitle() {
+    return _apiData?['tournament']?['name']?.toString() ??
+        _apiData?['name']?.toString() ??
+        t.title;
+  }
+
+  String _resolveDateRange() {
+    final dates = _apiData?['tournament']?['dates'] as Map<String, dynamic>?;
+    final startRaw = (dates?['tournament_start_at'] ?? _apiData?['tournament_start_at'])?.toString();
+    final endRaw = (dates?['tournament_end_at'] ?? _apiData?['tournament_end_at'])?.toString();
+
+    final startDt = startRaw != null ? DateTime.tryParse(startRaw)?.toLocal() : null;
+    final endDt = endRaw != null ? DateTime.tryParse(endRaw)?.toLocal() : null;
+
+    if (startDt != null && endDt != null) {
+      if (startDt.year == endDt.year && startDt.month == endDt.month && startDt.day == endDt.day) {
+        return '${_months[startDt.month - 1]} ${startDt.day}, ${startDt.year}';
+      }
+      return '${_months[startDt.month - 1]} ${startDt.day} – ${_months[endDt.month - 1]} ${endDt.day}, ${endDt.year}';
+    } else if (startDt != null) {
+      return '${_months[startDt.month - 1]} ${startDt.day}, ${startDt.year}';
+    }
+    return t.dateRange;
+  }
+
+  String _resolveLocation() {
+    final venues = _apiData?['venues'];
+    if (venues is List && venues.isNotEmpty) {
+      Map<String, dynamic>? primary;
+      for (final v in venues) {
+        if (v is Map<String, dynamic> && v['is_primary'] == true) {
+          primary = v;
+          break;
+        }
+      }
+      primary ??= venues.first is Map<String, dynamic> ? venues.first as Map<String, dynamic> : null;
+      if (primary != null) {
+        final vName = primary['venue_name']?.toString() ?? '';
+        final vLoc = primary['location']?.toString() ?? '';
+        if (vName.isNotEmpty && vLoc.isNotEmpty) return '$vName, $vLoc';
+        if (vName.isNotEmpty) return vName;
+        if (vLoc.isNotEmpty) return vLoc;
+      }
+    }
+    final topLoc = _apiData?['location']?.toString() ??
+        _apiData?['tournament']?['location']?.toString() ??
+        '';
+    if (topLoc.isNotEmpty) return topLoc;
+    return t.location;
+  }
+
+  String _resolveChampionTeam() {
+    final winner = _apiData?['result']?['winner'];
+    if (winner is Map) {
+      return winner['team_name']?.toString() ?? winner['name']?.toString() ?? '';
+    }
+    if (winner is String) {
+      return winner;
+    }
+    return t.championTeam;
+  }
+
+  String _formatIndianCurrency(dynamic rawAmount) {
+    final numVal = num.tryParse(rawAmount?.toString() ?? '') ?? 0;
+    final intVal = numVal.round();
+    final s = intVal.toString();
+    if (s.length <= 3) return '₹$s';
+    final last3 = s.substring(s.length - 3);
+    var rest = s.substring(0, s.length - 3);
+    final parts = <String>[];
+    while (rest.length > 2) {
+      parts.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) parts.insert(0, rest);
+    return '₹${parts.join(',')},$last3';
+  }
+
+  String _resolvePrizeAmount() {
+    final raw = _apiData?['prize_amount'] ?? _apiData?['tournament']?['prize_amount'] ?? 0;
+    return _formatIndianCurrency(raw);
+  }
+
+  String _resolvePrizeCaption() {
+    final prizes = _apiData?['prizes'];
+    if (prizes is List && prizes.isNotEmpty) {
+      final firstPrize = prizes.first;
+      if (firstPrize is Map && firstPrize['title'] != null && firstPrize['amount'] != null) {
+        return 'Total Prize Pool • ${firstPrize['title']}: ${_formatIndianCurrency(firstPrize['amount'])}';
+      }
+    }
+    final distStatus = _apiData?['prize_distribution']?['status']?.toString();
+    if (distStatus != null && distStatus.isNotEmpty) {
+      return 'Total Prize Pool • $distStatus';
+    }
+    return 'Total Prize Pool';
   }
 
   @override
@@ -118,25 +320,25 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                     children: [
                       _SummaryCard(
-                        title: _apiData!['tournament']?['name']?.toString() ?? t.title,
-                        dateRange: t.dateRange, // API gives start and end at, keeping it simple for now
-                        location: _apiData!['tournament']?['location']?.toString() ?? t.location,
-                        championTeam: _apiData!['result']?['winner']?.toString() ?? '',
+                        title: _resolveTitle(),
+                        dateRange: _resolveDateRange(),
+                        location: _resolveLocation(),
+                        championTeam: _resolveChampionTeam(),
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: TournamentStatBox(value: '${_apiData!['match_summary']?['total'] ?? 0}', label: 'Played')),
+                          Expanded(child: TournamentStatBox(value: _playedValue, label: 'Played')),
                           const SizedBox(width: 8),
-                          const Expanded(child: TournamentStatBox(value: '-', label: 'Won')),
+                          Expanded(child: TournamentStatBox(value: _wonValue, label: 'Won')),
                           const SizedBox(width: 8),
-                          const Expanded(child: TournamentStatBox(value: '-', label: 'Lost')),
+                          Expanded(child: TournamentStatBox(value: _lostValue, label: 'Lost')),
                           const SizedBox(width: 8),
-                          const Expanded(child: TournamentStatBox(value: '—', label: 'Final Rank')),
+                          Expanded(child: TournamentStatBox(value: _finalRankValue, label: 'Final Rank')),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _PrizeBar(amount: '${_apiData!['tournament']?['prize_amount'] ?? '0'}', caption: 'Total Prize Pool'),
+                      _PrizeBar(amount: _resolvePrizeAmount(), caption: _resolvePrizeCaption()),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -156,10 +358,11 @@ class _MyTournamentDetailsScreenState extends State<MyTournamentDetailsScreen> {
                           _MatchResultCard(
                             match: match,
                             onView: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => MatchResultDetailsScreen(match: match),
-                                ),
+                              MatchResultDetailsScreen.show(
+                                context,
+                                match: match,
+                                tournamentTitle: _resolveTitle(),
+                                dateRange: _resolveDateRange(),
                               );
                             },
                           ),
@@ -282,22 +485,26 @@ class _SummaryCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.emoji_events_rounded, color: AppColors.amberAccent, size: 22),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Champions',
-                        style: GoogleFonts.quicksand(
-                          color: const Color(0xFFFF8A1E),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Champions',
+                          style: GoogleFonts.quicksand(
+                            color: const Color(0xFFFF8A1E),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        championTeam,
-                        style: GoogleFonts.quicksand(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ],
+                        Text(
+                          championTeam,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.quicksand(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

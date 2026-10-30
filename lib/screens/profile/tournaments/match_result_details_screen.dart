@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/apiServices/user_api.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/glass_back_button.dart';
+import '../../../models/match_data_parser.dart';
 import '../../../models/my_tournament_info.dart';
 
 class _BatterLine {
@@ -75,18 +76,44 @@ const _awayInnings = _Innings(
   ],
 );
 
-/// Full match scorecard opened from a tournament match-result card.
+/// Match Results bottom sheet / screen opened from a tournament match-result card.
 class MatchResultDetailsScreen extends StatefulWidget {
   const MatchResultDetailsScreen({
     super.key,
     required this.match,
     this.tournamentTitle = 'Asia Cup 2026',
     this.dateRange = 'Aug 2 – 10, 2026',
+    this.isBottomSheet = false,
   });
 
   final MyTournamentMatchResult match;
   final String tournamentTitle;
   final String dateRange;
+  final bool isBottomSheet;
+
+  /// Shows the Match Results modal bottom sheet over Tournament Details.
+  static Future<void> show(
+    BuildContext context, {
+    required MyTournamentMatchResult match,
+    String tournamentTitle = '',
+    String dateRange = '',
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.88,
+        child: MatchResultDetailsScreen(
+          match: match,
+          tournamentTitle: tournamentTitle,
+          dateRange: dateRange,
+          isBottomSheet: true,
+        ),
+      ),
+    );
+  }
 
   @override
   State<MatchResultDetailsScreen> createState() => _MatchResultDetailsScreenState();
@@ -94,144 +121,469 @@ class MatchResultDetailsScreen extends StatefulWidget {
 
 class _MatchResultDetailsScreenState extends State<MatchResultDetailsScreen> {
   int _teamIndex = 0;
+  bool _isLoadingScorecard = false;
+  _Innings? _teamAInnings;
+  _Innings? _teamBInnings;
 
   MyTournamentMatchResult get match => widget.match;
 
-  _Innings get _innings => _teamIndex == 0 ? _homeInnings : _awayInnings;
+  @override
+  void initState() {
+    super.initState();
+    if (match.rawMatch != null) {
+      _isLoadingScorecard = true;
+      _fetchMatchScorecard();
+    }
+  }
+
+  _Innings _buildInningsFromRaw(
+    Map<String, dynamic> raw, {
+    required bool isTeamA,
+    List<_BatterLine>? parsedBatting,
+    List<_BowlerLine>? parsedBowling,
+  }) {
+    final sideTeam = MatchDataParser.team(raw, isA: isTeamA);
+    final teamsMap = raw['scoring']?['score']?['teams'];
+    final teamScoreMap = (sideTeam.id != null && teamsMap is Map && teamsMap[sideTeam.id] is Map)
+        ? teamsMap[sideTeam.id] as Map
+        : null;
+
+    final runs = teamScoreMap?['score']?.toString() ?? '0';
+    final wickets = teamScoreMap?['wickets']?.toString() ?? '0';
+    final overs = teamScoreMap?['overs']?.toString() ?? '0';
+
+    final extrasMap = teamScoreMap?['extras'] is Map ? teamScoreMap!['extras'] as Map : null;
+    final totalExtras = int.tryParse(extrasMap?['total']?.toString() ?? '') ?? 0;
+
+    return _Innings(
+      score: '$runs/$wickets',
+      oversLabel: '$overs overs',
+      extras: totalExtras,
+      batting: parsedBatting ?? const [],
+      bowling: parsedBowling ?? const [],
+    );
+  }
+
+  Future<void> _fetchMatchScorecard() async {
+    final raw = match.rawMatch;
+    if (raw == null) {
+      setState(() => _isLoadingScorecard = false);
+      return;
+    }
+
+    final matchId = int.tryParse(raw['id']?.toString() ?? '');
+    if (matchId == null) {
+      setState(() {
+        _teamAInnings = _buildInningsFromRaw(raw, isTeamA: true);
+        _teamBInnings = _buildInningsFromRaw(raw, isTeamA: false);
+        _isLoadingScorecard = false;
+      });
+      return;
+    }
+
+    setState(() => _isLoadingScorecard = true);
+    try {
+      final response = await UserApis().getLiveScore(matchId);
+      if (response != null && response['success'] == true && response['data'] is Map) {
+        final data = Map<String, dynamic>.from(response['data'] as Map);
+        final scoring = data['scoring'] as Map<String, dynamic>?;
+        final runtime = scoring?['runtime'] as Map<String, dynamic>?;
+        final events = runtime?['events'] as List<dynamic>? ?? [];
+
+        final teamA = MatchDataParser.team(raw, isA: true);
+        final teamB = MatchDataParser.team(raw, isA: false);
+        final teamAId = int.tryParse(teamA.id ?? '');
+        final teamBId = int.tryParse(teamB.id ?? '');
+
+        // Resolve player names from teams or getTeamPlayers
+        final Map<int, String> playerNames = {};
+        final Map<int, bool> playerIsCaptain = {};
+        final Map<int, List<int>> teamPlayerIds = {};
+
+        final futures = <Future<dynamic>>[];
+        if (teamAId != null) futures.add(UserApis().getTeamPlayers(teamAId));
+        if (teamBId != null && teamBId != teamAId) futures.add(UserApis().getTeamPlayers(teamBId));
+
+        if (futures.isNotEmpty) {
+          final results = await Future.wait(futures);
+          for (var i = 0; i < results.length; i++) {
+            final res = results[i];
+            final tId = (i == 0) ? teamAId : teamBId;
+            if (res != null && res['success'] == true && res['data'] is List) {
+              for (final p in res['data']) {
+                final uid = p['user_id'] ?? p['id'];
+                String pName = (p['player_name'] ?? '').toString().trim();
+                final user = p['user'];
+                if (user is Map) {
+                  final fullName = user['profile']?['full_name'] ?? user['display_name'] ?? user['name'];
+                  if (fullName != null && fullName.toString().trim().isNotEmpty) {
+                    pName = fullName.toString().trim();
+                  }
+                }
+                final parsedUid = int.tryParse(uid?.toString() ?? '') ?? 0;
+                if (parsedUid != 0) {
+                  if (pName.isNotEmpty) playerNames[parsedUid] = pName;
+                  if (p['is_captain'] == true) playerIsCaptain[parsedUid] = true;
+                  if (tId != null) {
+                    teamPlayerIds.putIfAbsent(tId, () => []).add(parsedUid);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Parse per-inning batting & bowling from events if available
+        final Map<int, Map<int, int>> innBatsmanRuns = {1: {}, 2: {}};
+        final Map<int, Map<int, int>> innBatsmanBalls = {1: {}, 2: {}};
+        final Map<int, Map<int, String>> innBatsmanDismissal = {1: {}, 2: {}};
+        final Map<int, Map<int, int>> innBowlerRuns = {1: {}, 2: {}};
+        final Map<int, Map<int, int>> innBowlerBalls = {1: {}, 2: {}};
+        final Map<int, Map<int, int>> innBowlerWickets = {1: {}, 2: {}};
+        final Map<int, int> inningBattingTeamId = {};
+
+        int activeInning = 1;
+        for (final ev in events) {
+          if (ev is! Map) continue;
+          final type = ev['type']?.toString();
+          final evData = ev['data'];
+          if (type == 'INNINGS_STARTED' && evData is Map) {
+            activeInning = int.tryParse(evData['inning']?.toString() ?? '1') ?? 1;
+            final batTid = int.tryParse(evData['batting_team_id']?.toString() ?? '');
+            if (batTid != null) inningBattingTeamId[activeInning] = batTid;
+          } else if (type == 'BALL_RECORDED' && evData is Map) {
+            final sId = int.tryParse(evData['striker_user_id']?.toString() ?? '') ?? 0;
+            final bId = int.tryParse(evData['bowler_user_id']?.toString() ?? '') ?? 0;
+            final val = int.tryParse(evData['value']?.toString() ?? '') ?? 0;
+            final delRuns = int.tryParse(evData['delivery_runs']?.toString() ?? '') ?? val;
+            final isLegal = evData['legal_delivery'] == true || evData['legal'] == true;
+            final eventCode = (evData['event_code'] ?? '').toString();
+
+            if (sId != 0) {
+              innBatsmanRuns[activeInning]![sId] = (innBatsmanRuns[activeInning]![sId] ?? 0) + (eventCode != 'WIDE' ? val : 0);
+              if (isLegal) {
+                innBatsmanBalls[activeInning]![sId] = (innBatsmanBalls[activeInning]![sId] ?? 0) + 1;
+              }
+              innBatsmanDismissal[activeInning]!.putIfAbsent(sId, () => 'not out');
+            }
+            if (bId != 0) {
+              innBowlerRuns[activeInning]![bId] = (innBowlerRuns[activeInning]![bId] ?? 0) + delRuns;
+              if (isLegal) {
+                innBowlerBalls[activeInning]![bId] = (innBowlerBalls[activeInning]![bId] ?? 0) + 1;
+              }
+              final w = int.tryParse(evData['wickets']?.toString() ?? '') ?? 0;
+              if (eventCode == 'WICKET' || w > 0) {
+                innBowlerWickets[activeInning]![bId] = (innBowlerWickets[activeInning]![bId] ?? 0) + (w > 0 ? w : 1);
+                if (sId != 0) {
+                  final bName = playerNames[bId] ?? 'Bowler';
+                  innBatsmanDismissal[activeInning]![sId] = 'b $bName';
+                }
+              }
+            }
+          }
+        }
+
+        List<_BatterLine> buildBattingForInning(int inn, int? tId) {
+          final runsMap = innBatsmanRuns[inn] ?? {};
+          final ballsMap = innBatsmanBalls[inn] ?? {};
+          final disMap = innBatsmanDismissal[inn] ?? {};
+          if (runsMap.isNotEmpty || ballsMap.isNotEmpty) {
+            final ids = {...runsMap.keys, ...ballsMap.keys};
+            return ids.map((id) {
+              return _BatterLine(
+                playerNames[id] ?? 'Player $id',
+                disMap[id] ?? 'not out',
+                runsMap[id] ?? 0,
+                ballsMap[id] ?? 0,
+                isYou: playerIsCaptain[id] == true,
+              );
+            }).toList();
+          }
+          if (tId != null && (teamPlayerIds[tId]?.isNotEmpty ?? false)) {
+            return teamPlayerIds[tId]!.map((id) {
+              return _BatterLine(
+                playerNames[id] ?? 'Player $id',
+                'not out',
+                0,
+                0,
+                isYou: playerIsCaptain[id] == true,
+              );
+            }).toList();
+          }
+          return const [];
+        }
+
+        List<_BowlerLine> buildBowlingForInning(int inn, int? oppTeamId) {
+          final runsMap = innBowlerRuns[inn] ?? {};
+          final ballsMap = innBowlerBalls[inn] ?? {};
+          final wMap = innBowlerWickets[inn] ?? {};
+          if (runsMap.isNotEmpty || ballsMap.isNotEmpty) {
+            final ids = {...runsMap.keys, ...ballsMap.keys};
+            return ids.map((id) {
+              final legal = ballsMap[id] ?? 0;
+              final oversStr = legal % 6 == 0 ? '${legal ~/ 6}' : '${legal ~/ 6}.${legal % 6}';
+              return _BowlerLine(
+                playerNames[id] ?? 'Bowler $id',
+                oversStr,
+                runsMap[id] ?? 0,
+                wMap[id] ?? 0,
+              );
+            }).toList();
+          }
+          if (oppTeamId != null && (teamPlayerIds[oppTeamId]?.isNotEmpty ?? false)) {
+            return teamPlayerIds[oppTeamId]!.map((id) {
+              return _BowlerLine(
+                playerNames[id] ?? 'Bowler $id',
+                '0',
+                0,
+                0,
+              );
+            }).toList();
+          }
+          return const [];
+        }
+
+        final int teamAInning = (inningBattingTeamId[2] == teamAId) ? 2 : 1;
+        final int teamBInning = (teamAInning == 1) ? 2 : 1;
+
+        if (mounted) {
+          setState(() {
+            _teamAInnings = _buildInningsFromRaw(
+              raw,
+              isTeamA: true,
+              parsedBatting: buildBattingForInning(teamAInning, teamAId),
+              parsedBowling: buildBowlingForInning(teamAInning, teamBId),
+            );
+            _teamBInnings = _buildInningsFromRaw(
+              raw,
+              isTeamA: false,
+              parsedBatting: buildBattingForInning(teamBInning, teamBId),
+              parsedBowling: buildBowlingForInning(teamBInning, teamAId),
+            );
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _teamAInnings = _buildInningsFromRaw(raw, isTeamA: true);
+            _teamBInnings = _buildInningsFromRaw(raw, isTeamA: false);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching match scorecard: $e');
+      if (mounted) {
+        setState(() {
+          _teamAInnings ??= _buildInningsFromRaw(raw, isTeamA: true);
+          _teamBInnings ??= _buildInningsFromRaw(raw, isTeamA: false);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingScorecard = false);
+      }
+    }
+  }
+
+  _Innings get _innings {
+    final raw = match.rawMatch;
+    if (_teamIndex == 0) {
+      return _teamAInnings ?? (raw != null ? _buildInningsFromRaw(raw, isTeamA: true) : _homeInnings);
+    }
+    return _teamBInnings ?? (raw != null ? _buildInningsFromRaw(raw, isTeamA: false) : _awayInnings);
+  }
 
   @override
   Widget build(BuildContext context) {
     final innings = _innings;
 
-    return Scaffold(
-      backgroundColor: AppColors.authBackgroundBottom,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  children: [
-                    GlassBackButton(onTap: () => Navigator.of(context).pop()),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.tournamentTitle,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.dateRange,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white54,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+    final content = Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1117),
+        borderRadius: widget.isBottomSheet
+            ? const BorderRadius.vertical(top: Radius.circular(26))
+            : BorderRadius.zero,
+        border: widget.isBottomSheet
+            ? Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1)))
+            : null,
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Match Results',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
+                  ),
                 ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF232730),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_isLoadingScorecard)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                  children: [
-                    _ScoreSummary(match: match),
-                    const SizedBox(height: 14),
-                    Row(
+            )
+          else
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                children: [
+                  _ScoreSummary(match: match),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TeamPill(
+                          label: match.teamA,
+                          selected: _teamIndex == 0,
+                          onTap: () => setState(() => _teamIndex = 0),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _TeamPill(
+                          label: match.teamB,
+                          selected: _teamIndex == 1,
+                          onTap: () => setState(() => _teamIndex = 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '${innings.score} (${innings.oversLabel})',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Batting',
+                    style: GoogleFonts.quicksand(
+                      color: AppColors.infoBlue,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF151821),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: _TeamPill(
-                            label: match.teamA,
-                            selected: _teamIndex == 0,
-                            onTap: () => setState(() => _teamIndex = 0),
+                        const _StatHeader(left: 'Batter', right: ['R', 'B']),
+                        const SizedBox(height: 12),
+                        if (innings.batting.isEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'No batting stats available',
+                              style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _TeamPill(
-                            label: match.teamB,
-                            selected: _teamIndex == 1,
-                            onTap: () => setState(() => _teamIndex = 1),
-                          ),
-                        ),
+                          const SizedBox(height: 8),
+                        ] else
+                          for (final batter in innings.batting) ...[
+                            _BatterRow(batter: batter),
+                            const SizedBox(height: 14),
+                          ],
+                        Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+                        const SizedBox(height: 12),
+                        _ExtrasRow(extras: innings.extras),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      '${innings.score} (${innings.oversLabel})',
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Bowling',
+                    style: GoogleFonts.quicksand(
+                      color: AppColors.infoBlue,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Batting',
-                      style: GoogleFonts.quicksand(
-                        color: AppColors.infoBlue,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF151821),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                     ),
-                    const SizedBox(height: 12),
-                    const _StatHeader(left: 'Batter', right: ['R', 'B']),
-                    const SizedBox(height: 10),
-                    for (final batter in innings.batting) ...[
-                      _BatterRow(batter: batter),
-                      const SizedBox(height: 14),
-                    ],
-                    Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
-                    const SizedBox(height: 12),
-                    _ExtrasRow(extras: innings.extras),
-                    const SizedBox(height: 22),
-                    Text(
-                      'Bowling',
-                      style: GoogleFonts.quicksand(
-                        color: AppColors.infoBlue,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1E28),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.glassBorder),
-                      ),
-                      child: Column(
-                        children: [
-                          const _StatHeader(left: 'Bowler', right: ['O', 'R', 'W']),
-                          const SizedBox(height: 12),
+                    child: Column(
+                      children: [
+                        const _StatHeader(left: 'Bowler', right: ['O', 'R', 'W']),
+                        const SizedBox(height: 12),
+                        if (innings.bowling.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'No bowling stats available',
+                              style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13),
+                            ),
+                          )
+                        else
                           for (var i = 0; i < innings.bowling.length; i++) ...[
                             _BowlerRow(bowler: innings.bowling[i]),
                             if (i != innings.bowling.length - 1) const SizedBox(height: 14),
                           ],
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
+    );
+
+    if (widget.isBottomSheet) {
+      return ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        child: Material(
+          color: Colors.transparent,
+          child: content,
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0E1117),
+      body: SafeArea(child: content),
     );
   }
 }
@@ -247,9 +599,9 @@ class _ScoreSummary extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2128),
+        color: const Color(0xFF161A22),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.glassBorder),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
@@ -278,7 +630,7 @@ class _ScoreSummary extends StatelessWidget {
               Text(
                 'Vs',
                 style: GoogleFonts.quicksand(
-                  color: Colors.white38,
+                  color: Colors.white54,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -334,21 +686,30 @@ class _TeamPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 44,
+        height: 42,
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          gradient: selected ? AppColors.bannerGradient : null,
-          color: selected ? null : const Color(0xFF2A2E38),
-          borderRadius: BorderRadius.circular(22),
+          gradient: selected
+              ? const LinearGradient(
+                  colors: [Color(0xFFF3981A), Color(0xFFD69E2E)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                )
+              : null,
+          color: selected ? null : const Color(0xFF1B1F27),
+          borderRadius: BorderRadius.circular(10),
+          border: selected
+              ? null
+              : Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.quicksand(
-            color: Colors.white,
-            fontSize: 13,
+            color: selected ? Colors.white : Colors.white54,
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -427,7 +788,7 @@ class _BatterRow extends StatelessWidget {
           child: Text(
             '${batter.balls}',
             textAlign: TextAlign.right,
-            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14),
+            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -447,7 +808,7 @@ class _ExtrasRow extends StatelessWidget {
         Expanded(
           child: Text(
             'Extras',
-            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5, fontWeight: FontWeight.w600),
+            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5, fontWeight: FontWeight.w500),
           ),
         ),
         SizedBox(
@@ -455,7 +816,7 @@ class _ExtrasRow extends StatelessWidget {
           child: Text(
             '$extras',
             textAlign: TextAlign.right,
-            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -475,7 +836,7 @@ class _BowlerRow extends StatelessWidget {
         Expanded(
           child: Text(
             bowler.name,
-            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
           ),
         ),
         SizedBox(
@@ -483,7 +844,7 @@ class _BowlerRow extends StatelessWidget {
           child: Text(
             bowler.overs,
             textAlign: TextAlign.right,
-            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
           ),
         ),
         SizedBox(
@@ -491,7 +852,7 @@ class _BowlerRow extends StatelessWidget {
           child: Text(
             '${bowler.runs}',
             textAlign: TextAlign.right,
-            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
           ),
         ),
         SizedBox(
@@ -499,7 +860,7 @@ class _BowlerRow extends StatelessWidget {
           child: Text(
             '${bowler.wickets}',
             textAlign: TextAlign.right,
-            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
           ),
         ),
       ],

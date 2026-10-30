@@ -57,66 +57,82 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
       ),
       extendBodyBehindAppBar: true,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Consumer<HomeProvider>(
-        builder: (context, homeProvider, child) {
-          final list = homeProvider.tournamentsList;
+            builder: (context, homeProvider, child) {
+              final list = homeProvider.tournamentsList;
 
-          if (homeProvider.isLoading && list.isEmpty) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await homeProvider.fetchTournaments(isRefresh: true);
-            },
-            color: AppColors.mintGreen,
-            backgroundColor: AppColors.secondary,
-            child: list.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                      Center(
-                        child: Text(
-                          'No tournaments found',
-                          style: GoogleFonts.quicksand(color: Colors.white54),
-                        ),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(20),
-            itemCount: list.length + (homeProvider.isFetchingMoreTournaments ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == list.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              if (homeProvider.isLoading && list.isEmpty) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 );
               }
-              final t = list[index] as Map<String, dynamic>;
-              return TournamentCard(
-                tournament: t,
-                onTap: () {
-                  final id = t['id'];
-                  if (id != null) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => TournamentDetailScreen(tournamentId: id),
-                      ),
-                    );
-                  }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await homeProvider.fetchTournaments(isRefresh: true);
                 },
+                color: AppColors.mintGreen,
+                backgroundColor: AppColors.secondary,
+                child: list.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.3,
+                          ),
+                          Center(
+                            child: Text(
+                              'No tournaments found',
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(20),
+                        itemCount:
+                            list.length +
+                            (homeProvider.isFetchingMoreTournaments ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == list.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            );
+                          }
+                          final t = list[index] as Map<String, dynamic>;
+                          return TournamentCard(
+                            tournament: t,
+                            onTap: () {
+                              final id = t['id'];
+                              if (id != null) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => TournamentDetailScreen(
+                                      tournamentId: id,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
               );
             },
           ),
-        );
-      },
-      ),
         ),
       ),
     );

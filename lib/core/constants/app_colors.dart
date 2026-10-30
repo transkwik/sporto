@@ -259,4 +259,16 @@ class AppColors {
   static const REGISTRATION_REJECTED = 4;
   static const REGISTRATION_CANCELLED = 5;
   static const REGISTRATION_COMPLETED = 6;
+
+  // / Status Workflow
+  static const STATUS_DRAFT = 1;
+  static const STATUS_PUBLISHED = 2;
+  static const STATUS_REGISTRATION_OPEN = 3;
+  static const STATUS_REGISTRATION_CLOSED = 4;
+  static const STATUS_CHECK_IN = 5;
+  static const STATUS_IN_PROGRESS = 6;
+  static const STATUS_COMPLETED = 7;
+  static const STATUS_CANCELLED = 8;
+  static const STATUS_ARCHIVED = 9;
+  static const STATUS_UPCOMING = 10;
 }
