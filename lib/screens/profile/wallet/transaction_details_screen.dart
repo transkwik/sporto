@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sporto/screens/profile/wallet/prise_details_wallate_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/wallet_utils.dart';
 import '../../../core/widgets/glass_back_button.dart';
@@ -30,7 +31,9 @@ class TransactionDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -58,7 +61,10 @@ class TransactionDetailsScreen extends StatelessWidget {
                             headerSubtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -88,7 +94,11 @@ class TransactionDetailsScreen extends StatelessWidget {
                               color: Color(0xFF141820),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(WalletUtils.icon(t), color: Colors.white, size: 22),
+                            child: Icon(
+                              WalletUtils.icon(t),
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Text(
@@ -102,12 +112,18 @@ class TransactionDetailsScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             WalletUtils.title(t),
-                            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white70,
+                              fontSize: 13.5,
+                            ),
                           ),
                           if (directionLabel.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
                                 color: accent.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
@@ -136,7 +152,10 @@ class TransactionDetailsScreen extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 18),
-                          _MetaRow(label: 'Transaction Ref', value: WalletUtils.reference(t)),
+                          _MetaRow(
+                            label: 'Transaction Ref',
+                            value: WalletUtils.reference(t),
+                          ),
                           if (typeLabel.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             _MetaRow(label: 'Type', value: typeLabel),
@@ -156,13 +175,20 @@ class TransactionDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       Text(
                         'Description',
-                        style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white54,
+                          fontSize: 13.5,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _InfoCard(
                         child: Row(
                           children: [
-                            Icon(WalletUtils.icon(t), color: Colors.white70, size: 18),
+                            Icon(
+                              WalletUtils.icon(t),
+                              color: Colors.white70,
+                              size: 18,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -186,6 +212,19 @@ class TransactionDetailsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      TournamentDetailsCard(
+                        tournamentName: 'Spoto Kondapur Super Over Cup',
+                        onViewDetails: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const PrizeDetailsWallateScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ],
                 ),
@@ -194,6 +233,116 @@ class TransactionDetailsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class TournamentDetailsCard extends StatelessWidget {
+  final String tournamentName;
+  final VoidCallback onViewDetails;
+
+  const TournamentDetailsCard({
+    super.key,
+    this.tournamentName = 'Spoto Kondapur Super Over Cup',
+    required this.onViewDetails,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Title
+        Text(
+          'Tournament Details',
+          style: GoogleFonts.comfortaa(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFAAAAAA),
+          ),
+        ),
+
+        const SizedBox(height: 35),
+
+        // Tournament Card
+        GestureDetector(
+          onTap: onViewDetails,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1D2025),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFF393D42), width: 1),
+            ),
+            child: Row(
+              children: [
+                // Cricket Icon
+                Container(
+                  height: 20,
+                  width: 20,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1E23),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Icon(
+                    Icons.sports_cricket,
+                    color: Colors.white,
+                    size: 25,
+                  ),
+                ),
+
+                const SizedBox(width: 28),
+
+                // Tournament Information
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        tournamentName,
+                        style: GoogleFonts.comfortaa(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      GestureDetector(
+                        onTap: onViewDetails,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'View Details',
+                              style: GoogleFonts.comfortaa(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF55BFEF),
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 20,
+                              color: Color(0xFF55BFEF),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -220,7 +369,11 @@ class _MetaRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
-            style: GoogleFonts.quicksand(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
