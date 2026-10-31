@@ -14,7 +14,8 @@ class RefereeGameLocationScreen extends StatefulWidget {
   final RefereeBookingDraft draft;
 
   @override
-  State<RefereeGameLocationScreen> createState() => _RefereeGameLocationScreenState();
+  State<RefereeGameLocationScreen> createState() =>
+      _RefereeGameLocationScreenState();
 }
 
 class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
@@ -63,7 +64,9 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RefereeScheduleScreen(
-          draft: widget.draft.copyWith(location: 'KPHB Indoor Stadium, Kompally, Hyderabad'),
+          draft: widget.draft.copyWith(
+            location: 'KPHB Indoor Stadium, Kompally, Hyderabad',
+          ),
         ),
       ),
     );
@@ -71,7 +74,9 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _step == _LocationStep.empty ? 'Game Location' : 'Book A Referee';
+    final title = _step == _LocationStep.empty
+        ? 'Game Location'
+        : 'Book A Referee';
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -86,7 +91,9 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                   children: [
                     Row(
                       children: [
-                        GlassBackButton(onTap: () => Navigator.of(context).pop()),
+                        GlassBackButton(
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -180,7 +187,11 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.my_location_rounded, color: _questionBlue, size: 20),
+                            const Icon(
+                              Icons.my_location_rounded,
+                              color: _questionBlue,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Text(
                               'Use My Current Location',
@@ -197,7 +208,10 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Or search venue, area or address',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -215,15 +229,20 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                             Expanded(
                               child: AbsorbPointer(
                                 child: TextField(
-                                
                                   controller: _searchController,
                                   readOnly: true,
-                                  style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14.5),
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white,
+                                    fontSize: 14.5,
+                                  ),
                                   decoration: InputDecoration(
                                     fillColor: Colors.transparent,
                                     filled: true,
                                     contentPadding: EdgeInsets.zero,
-                                    hintStyle: GoogleFonts.quicksand(color: Colors.white38, fontSize: 14.5),
+                                    hintStyle: GoogleFonts.quicksand(
+                                      color: Colors.white38,
+                                      fontSize: 14.5,
+                                    ),
                                     border: InputBorder.none,
                                     errorBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
@@ -231,13 +250,15 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                                     disabledBorder: InputBorder.none,
                                     focusedErrorBorder: InputBorder.none,
                                     hintText: 'Select Current Location',
-
-                                    
                                   ),
                                 ),
                               ),
                             ),
-                            const Icon(Icons.search_rounded, color: _questionBlue, size: 22),
+                            const Icon(
+                              Icons.search_rounded,
+                              color: _questionBlue,
+                              size: 22,
+                            ),
                           ],
                         ),
                       ),
@@ -277,7 +298,11 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                               children: [
                                 const Padding(
                                   padding: EdgeInsets.only(top: 2),
-                                  child: Icon(Icons.location_on_rounded, color: _mint, size: 18),
+                                  child: Icon(
+                                    Icons.location_on_rounded,
+                                    color: _mint,
+                                    size: 18,
+                                  ),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -291,7 +316,8 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                                           ),
                                         )
                                       : Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'KPHB Indoor Stadium',
@@ -320,7 +346,10 @@ class _RefereeGameLocationScreenState extends State<RefereeGameLocationScreen> {
                       Text(
                         'This is where your referee will be required to report.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 12.5),
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white38,
+                          fontSize: 12.5,
+                        ),
                       ),
                     ],
                   ],

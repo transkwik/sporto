@@ -43,7 +43,8 @@ class PrizeDetailsInfo {
     this.formulaLabel = '₹50,000 ÷ 10 = ₹5,000',
     this.individualAwardsTotal = '₹5,000',
     this.totalBreakdown = '₹5,000 team share + ₹5,000 awards',
-    this.walletTxnNote = 'Each prize is credited as its own wallet transaction.',
+    this.walletTxnNote =
+        'Each prize is credited as its own wallet transaction.',
     this.eligibleCount = 10,
     this.yourSlot = 1,
     this.winningTeamName = 'SPOTO Warriors',
@@ -130,8 +131,16 @@ const dummyPrizeDetails = PrizeDetailsInfo(
   creditNote:
       'Your share will be credited to your SPOTO Wallet after prize distribution is completed.',
   yourPrizes: [
-    PrizeLineItem(label: 'Winning Team Prize', amountLabel: '₹5,000', status: 'Processing'),
-    PrizeLineItem(label: 'Player of the Tournament', amountLabel: '₹5,000', status: 'Processing'),
+    PrizeLineItem(
+      label: 'Winning Team Prize',
+      amountLabel: '₹5,000',
+      status: 'Processing',
+    ),
+    PrizeLineItem(
+      label: 'Player of the Tournament',
+      amountLabel: '₹5,000',
+      status: 'Processing',
+    ),
   ],
   totalPrize: '₹10,000',
 );

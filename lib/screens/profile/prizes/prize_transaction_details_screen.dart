@@ -6,7 +6,7 @@ import '../../../core/utils/prize_utils.dart';
 import 'package:provider/provider.dart';
 import 'prize_status_style.dart';
 import 'providers/prize_distribution_provider.dart';
-import '../../home/prize_details_screen.dart';
+import '../../home/prize_details_screen_p.dart';
 
 class PrizeTransactionDetailsScreen extends StatefulWidget {
   const PrizeTransactionDetailsScreen({super.key, required this.prize});
@@ -15,10 +15,12 @@ class PrizeTransactionDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> prize;
 
   @override
-  State<PrizeTransactionDetailsScreen> createState() => _PrizeTransactionDetailsScreenState();
+  State<PrizeTransactionDetailsScreen> createState() =>
+      _PrizeTransactionDetailsScreenState();
 }
 
-class _PrizeTransactionDetailsScreenState extends State<PrizeTransactionDetailsScreen> {
+class _PrizeTransactionDetailsScreenState
+    extends State<PrizeTransactionDetailsScreen> {
   int? get _tournamentId => PrizeUtils.tournamentId(widget.prize);
 
   @override
@@ -36,7 +38,10 @@ class _PrizeTransactionDetailsScreenState extends State<PrizeTransactionDetailsS
   Future<void> _refresh() async {
     final id = _tournamentId;
     if (id == null) return;
-    await context.read<PrizeDistributionProvider>().fetchDistribution(id, refresh: true);
+    await context.read<PrizeDistributionProvider>().fetchDistribution(
+      id,
+      refresh: true,
+    );
   }
 
   @override
@@ -63,15 +68,19 @@ class _PrizeTransactionDetailsScreenState extends State<PrizeTransactionDetailsS
 
     final banner = switch (payoutStatus) {
       PayoutStatus.processing => 'Your payout is being processed.',
-      PayoutStatus.pending => 'Your payout is pending. It will be processed soon.',
-      PayoutStatus.failed => 'This payout failed. Please contact support if it persists.',
+      PayoutStatus.pending =>
+        'Your payout is pending. It will be processed soon.',
+      PayoutStatus.failed =>
+        'This payout failed. Please contact support if it persists.',
       PayoutStatus.credited => null,
     };
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -95,7 +104,10 @@ class _PrizeTransactionDetailsScreenState extends State<PrizeTransactionDetailsS
                           ),
                           Text(
                             subtitle,
-                            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -109,179 +121,204 @@ class _PrizeTransactionDetailsScreenState extends State<PrizeTransactionDetailsS
                   backgroundColor: AppColors.secondary,
                   onRefresh: _refresh,
                   child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 22, 16, 18),
-                      decoration: BoxDecoration(
-                        color: style.heroBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.4)),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF141820),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(PrizeUtils.icon(p), color: Colors.white, size: 22),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(16, 22, 16, 18),
+                        decoration: BoxDecoration(
+                          color: style.heroBg,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.4),
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            amount,
-                            style: GoogleFonts.quicksand(
-                              color: statusColor,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            title,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(style.icon, color: statusColor, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                statusLabel,
-                                style: GoogleFonts.quicksand(
-                                  color: statusColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF141820),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
-                        ],
+                              child: Icon(
+                                PrizeUtils.icon(p),
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              amount,
+                              style: GoogleFonts.quicksand(
+                                color: statusColor,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              title,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(style.icon, color: statusColor, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  statusLabel,
+                                  style: GoogleFonts.quicksand(
+                                    color: statusColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Tournament Details',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: tournamentId == null
-                          ? null
-                          : () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => PrizeDetailsScreen(
-                                    tournamentId: tournamentId,
-                                    tournamentName: tournamentName,
+                      const SizedBox(height: 18),
+                      Text(
+                        'Tournament Details',
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white54,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        // onTap: tournamentId == null
+                        //     ? null
+                        //     : () => Navigator.of(context).push(
+                        //           MaterialPageRoute(
+                        //             builder: (_) => PrizeDetailsScreen(
+                        //               tournamentId: tournamentId,
+                        //               tournamentName: tournamentName,
+                        //             ),
+                        //           ),
+                        //         ),
+                        child: _Card(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.emoji_events_outlined,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  tournamentName,
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
-                      child: _Card(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.emoji_events_outlined, color: Colors.white70, size: 18),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                tournamentName,
-                                style: GoogleFonts.quicksand(
-                                  color: Colors.white,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w800,
+                              if (tournamentId != null)
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Colors.white54,
+                                  size: 20,
                                 ),
-                              ),
-                            ),
-                            if (tournamentId != null)
-                              const Icon(Icons.chevron_right_rounded, color: Colors.white54, size: 20),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Prize',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 8),
-                    _Card(
-                      child: Column(
-                        children: [
-                          _kv('Prize', title),
-                          if (categoryLabel.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            _kv('Category', categoryLabel),
-                          ],
-                          if (typeLabel.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            _kv('Type', typeLabel),
-                          ],
-                          if (team != null) ...[
-                            const SizedBox(height: 10),
-                            _kv('Team', team),
-                          ],
-                          const SizedBox(height: 10),
-                          _kv('Amount', amount, valueColor: statusColor),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (banner != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                        decoration: BoxDecoration(
-                          color: style.heroBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: statusColor.withValues(alpha: 0.45)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Prize',
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white54,
+                          fontSize: 13.5,
                         ),
-                        child: Row(
+                      ),
+                      const SizedBox(height: 8),
+                      _Card(
+                        child: Column(
                           children: [
-                            Icon(style.icon, color: statusColor, size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                banner,
-                                style: GoogleFonts.quicksand(
-                                  color: statusColor,
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
+                            _kv('Prize', title),
+                            if (categoryLabel.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _kv('Category', categoryLabel),
+                            ],
+                            if (typeLabel.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _kv('Type', typeLabel),
+                            ],
+                            if (team != null) ...[
+                              const SizedBox(height: 10),
+                              _kv('Team', team),
+                            ],
+                            const SizedBox(height: 10),
+                            _kv('Amount', amount, valueColor: statusColor),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
-                    ],
-                    _Card(
-                      child: Column(
-                        children: [
-                          _kv('Status', statusLabel, valueColor: statusColor),
-                          const SizedBox(height: 10),
-                          _kv('Transaction Ref', reference),
-                          if (detailDate.isNotEmpty) ...[
+                      if (banner != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                          decoration: BoxDecoration(
+                            color: style.heroBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: statusColor.withValues(alpha: 0.45),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(style.icon, color: statusColor, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  banner,
+                                  style: GoogleFonts.quicksand(
+                                    color: statusColor,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      _Card(
+                        child: Column(
+                          children: [
+                            _kv('Status', statusLabel, valueColor: statusColor),
                             const SizedBox(height: 10),
-                            _kv('Credited On', detailDate),
+                            _kv('Transaction Ref', reference),
+                            if (detailDate.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _kv('Credited On', detailDate),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    if (tournamentId != null) ...[
-                      const SizedBox(height: 18),
-                      _DistributionSection(
-                        tournamentId: tournamentId,
-                        prizeId: PrizeUtils.prizeId(p),
-                      ),
+                      if (tournamentId != null) ...[
+                        const SizedBox(height: 18),
+                        _DistributionSection(
+                          tournamentId: tournamentId,
+                          prizeId: PrizeUtils.prizeId(p),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
                 ),
               ),
             ],
@@ -339,18 +376,26 @@ class _Card extends StatelessWidget {
 /// Prize distribution for the tournament (`prize-distribution` API), read from
 /// [PrizeDistributionProvider]. [prizeId] marks the award for this payout.
 class _DistributionSection extends StatelessWidget {
-  const _DistributionSection({required this.tournamentId, required this.prizeId});
+  const _DistributionSection({
+    required this.tournamentId,
+    required this.prizeId,
+  });
 
   final int tournamentId;
   final int? prizeId;
 
   static Color _statusColor(String raw) {
     final s = raw.toUpperCase();
-    if (s.contains('FAIL') || s.contains('CANCEL')) return const Color(0xFFE85A6B);
-    if (s.contains('COMPLETE') || s.contains('DISTRIBUTED') || s.contains('CREDIT') || s == 'PAID') {
+    if (s.contains('FAIL') || s.contains('CANCEL'))
+      return const Color(0xFFE85A6B);
+    if (s.contains('COMPLETE') ||
+        s.contains('DISTRIBUTED') ||
+        s.contains('CREDIT') ||
+        s == 'PAID') {
       return AppColors.mintGreen;
     }
-    if (s.contains('PROGRESS') || s.contains('PROCESS')) return const Color(0xFFFF8A1E);
+    if (s.contains('PROGRESS') || s.contains('PROCESS'))
+      return const Color(0xFFFF8A1E);
     return const Color(0xFFE3A93D);
   }
 
@@ -361,7 +406,9 @@ class _DistributionSection extends StatelessWidget {
   }
 
   static bool _isMine(Map row) =>
-      row['is_me'] == true || row['is_my_team'] == true || row['is_mine'] == true;
+      row['is_me'] == true ||
+      row['is_my_team'] == true ||
+      row['is_mine'] == true;
 
   @override
   Widget build(BuildContext context) {
@@ -378,12 +425,18 @@ class _DistributionSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Prize Distribution',
-                    style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white54,
+                      fontSize: 13.5,
+                    ),
                   ),
                 ),
                 if (statusRaw.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: statusColor),
@@ -416,7 +469,10 @@ class _DistributionSection extends StatelessWidget {
             child: SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.mintGreen),
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: AppColors.mintGreen,
+              ),
             ),
           ),
         ),
@@ -436,7 +492,10 @@ class _DistributionSection extends StatelessWidget {
             GestureDetector(
               onTap: () => prov.fetchDistribution(tournamentId),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: AppColors.mintGreen),
@@ -494,7 +553,8 @@ class _DistributionSection extends StatelessWidget {
               subtitle: _playerLabel(row),
               amount: _money(row),
               mine: _isMine(row),
-              current: prizeId != null &&
+              current:
+                  prizeId != null &&
                   int.tryParse(row['prize_id']?.toString() ?? '') == prizeId,
             ),
             const SizedBox(height: 8),
@@ -520,16 +580,16 @@ class _DistributionSection extends StatelessWidget {
   }
 
   Widget _groupLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: GoogleFonts.quicksand(
-            color: Colors.white70,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: GoogleFonts.quicksand(
+        color: Colors.white70,
+        fontSize: 12.5,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 
   Widget _row({
     required String title,
@@ -574,15 +634,23 @@ class _DistributionSection extends StatelessWidget {
                               subtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         if (mine && subtitle != 'You') ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.mintGreen.withValues(alpha: 0.15),
+                              color: AppColors.mintGreen.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(

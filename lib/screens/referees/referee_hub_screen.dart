@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sporto/screens/referees/referee_sport_location_screen.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/referee_info.dart';
@@ -19,7 +20,10 @@ class RefereeHubScreen extends StatefulWidget {
 class _RefereeHubScreenState extends State<RefereeHubScreen> {
   int _tab = 0;
 
-  void _openBrowse({required String title, required List<RefereeOfficial> officials}) {
+  void _openBrowse({
+    required String title,
+    required List<RefereeOfficial> officials,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RefereeBrowseScreen(title: title, officials: officials),
@@ -40,7 +44,9 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -50,7 +56,9 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: GlassBackButton(onTap: () => Navigator.of(context).pop()),
+                    child: GlassBackButton(
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -116,12 +124,15 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const RefereesScreen(),
+                            builder: (_) => const RefereeSportLocationScreen(),
                           ),
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(22),
@@ -145,7 +156,9 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF141820),
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFF3A4A28).withValues(alpha: 0.7)),
+                  border: Border.all(
+                    color: const Color(0xFF3A4A28).withValues(alpha: 0.7),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -171,13 +184,16 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Text(
-                          _tab == 0 ? 'No upcoming bookings.' : 'No ongoing bookings.',
+                          _tab == 0
+                              ? 'No upcoming bookings.'
+                              : 'No ongoing bookings.',
                           style: GoogleFonts.quicksand(color: Colors.white54),
                         ),
                       )
                     else
                       ...visible.map(
-                        (assignment) => RefereeAssignmentCard(assignment: assignment),
+                        (assignment) =>
+                            RefereeAssignmentCard(assignment: assignment),
                       ),
                   ],
                 ),
@@ -209,7 +225,11 @@ class _RefereeHubScreenState extends State<RefereeHubScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: AppColors.infoBlue, size: 18),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.infoBlue,
+                          size: 18,
+                        ),
                       ],
                     ),
                   ),

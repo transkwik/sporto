@@ -23,7 +23,12 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
   static const _typeBlue = Color(0xFF6EC8F5);
   static const _idleFill = Color(0xFF1A1F28);
 
-  static const _dates = ['12 Oct 2026', '13 Oct 2026', '14 Oct 2026', '15 Oct 2026'];
+  static const _dates = [
+    '12 Oct 2026',
+    '13 Oct 2026',
+    '14 Oct 2026',
+    '15 Oct 2026',
+  ];
   static const _times = ['3:00 PM', '5:00 PM', '6:30 PM', '8:00 PM'];
   static const _durations = ['1 Hour', '2 Hours', '2 Hours'];
 
@@ -47,7 +52,9 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                   children: [
                     Row(
                       children: [
-                        GlassBackButton(onTap: () => Navigator.of(context).pop()),
+                        GlassBackButton(
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
                         const SizedBox(width: 10),
                         Text(
                           'Your Sponsorship',
@@ -94,7 +101,11 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                             children: [
                               const Padding(
                                 padding: EdgeInsets.only(top: 2),
-                                child: Icon(Icons.location_on_rounded, color: _mint, size: 16),
+                                child: Icon(
+                                  Icons.location_on_rounded,
+                                  color: _mint,
+                                  size: 16,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -111,7 +122,10 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                                     ),
                                     Text(
                                       'Kompally, Hyderabad',
-                                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
+                                      style: GoogleFonts.quicksand(
+                                        color: Colors.white54,
+                                        fontSize: 12.5,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -151,7 +165,11 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                     const SizedBox(height: 22),
                     Text(
                       'Date',
-                      style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     SizedBox(
@@ -172,7 +190,11 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'Start Time',
-                      style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -190,7 +212,11 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'Duration',
-                      style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -220,7 +246,8 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
                             dateLabel: _dates[_date],
                             timeLabel: _times[_time],
                             durationLabel: _durations[_duration],
-                            location: 'KPHB Indoor Stadium, Kompally, Hyderabad',
+                            location:
+                                'KPHB Indoor Stadium, Kompally, Hyderabad',
                           ),
                         ),
                       ),
@@ -260,7 +287,11 @@ class _RefereeScheduleScreenState extends State<RefereeScheduleScreen> {
 }
 
 class _TypePill extends StatelessWidget {
-  const _TypePill({required this.label, required this.selected, required this.onTap});
+  const _TypePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -275,7 +306,9 @@ class _TypePill extends StatelessWidget {
         height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? _RefereeScheduleScreenState._typeBlue : _RefereeScheduleScreenState._idleFill,
+          color: selected
+              ? _RefereeScheduleScreenState._typeBlue
+              : _RefereeScheduleScreenState._idleFill,
           borderRadius: BorderRadius.circular(22),
         ),
         child: Text(
@@ -292,7 +325,11 @@ class _TypePill extends StatelessWidget {
 }
 
 class _YellowChip extends StatelessWidget {
-  const _YellowChip({required this.label, required this.selected, required this.onTap});
+  const _YellowChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -305,7 +342,9 @@ class _YellowChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? _RefereeScheduleScreenState._selectedYellow : _RefereeScheduleScreenState._idleFill,
+          color: selected
+              ? _RefereeScheduleScreenState._selectedYellow
+              : _RefereeScheduleScreenState._idleFill,
           borderRadius: BorderRadius.circular(22),
         ),
         child: Text(

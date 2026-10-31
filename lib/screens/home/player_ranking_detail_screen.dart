@@ -14,12 +14,16 @@ class PlayerRankingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entry = detail.entry;
-    final ratingLabel = detail.rating.toStringAsFixed(detail.rating % 1 == 0 ? 0 : 1);
+    final ratingLabel = detail.rating.toStringAsFixed(
+      detail.rating % 1 == 0 ? 0 : 1,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -60,7 +64,9 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF1A1E28),
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.glassBorder),
+                                border: Border.all(
+                                  color: AppColors.glassBorder,
+                                ),
                               ),
                               child: Text(
                                 rankingInitials(entry.name),
@@ -75,7 +81,10 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                               right: -6,
                               top: -4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE3A93D),
                                   borderRadius: BorderRadius.circular(12),
@@ -112,7 +121,10 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     'pts ',
-                                    style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 12.5),
+                                    style: GoogleFonts.quicksand(
+                                      color: Colors.white38,
+                                      fontSize: 12.5,
+                                    ),
                                   ),
                                   Text(
                                     ratingLabel,
@@ -139,8 +151,12 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                                       ),
                                     ),
                                     TextSpan(
-                                      text: '  •  ${detail.role}  •  ${entry.matches} Matches',
-                                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                                      text:
+                                          '  •  ${detail.role}  •  ${entry.matches} Matches',
+                                      style: GoogleFonts.quicksand(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -193,15 +209,31 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                                         '${detail.role}  •  ${entry.matches} Matches',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                                        style: GoogleFonts.quicksand(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                    Text('  •  ', style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 12)),
-                                    const Icon(Icons.emoji_events_rounded, color: Color(0xFFE3A93D), size: 13),
+                                    Text(
+                                      '  •  ',
+                                      style: GoogleFonts.quicksand(
+                                        color: Colors.white38,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.emoji_events_rounded,
+                                      color: Color(0xFFE3A93D),
+                                      size: 13,
+                                    ),
                                     const SizedBox(width: 3),
                                     Text(
                                       '${entry.awards} Awards',
-                                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                                      style: GoogleFonts.quicksand(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -221,9 +253,18 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                             value: detail.recentForm.join('  •  '),
                             labelColor: const Color(0xFFE3A93D),
                           ),
-                          RankingStatRow(label: 'Runs', value: '${detail.runs}'),
-                          RankingStatRow(label: 'Batting Average', value: detail.battingAverage.toStringAsFixed(1)),
-                          RankingStatRow(label: 'Strike Rate', value: detail.strikeRate.toStringAsFixed(1)),
+                          RankingStatRow(
+                            label: 'Runs',
+                            value: '${detail.runs}',
+                          ),
+                          RankingStatRow(
+                            label: 'Batting Average',
+                            value: detail.battingAverage.toStringAsFixed(1),
+                          ),
+                          RankingStatRow(
+                            label: 'Strike Rate',
+                            value: detail.strikeRate.toStringAsFixed(1),
+                          ),
                         ],
                       ),
                     ),
@@ -231,22 +272,36 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                     RankingDarkCard(
                       child: Column(
                         children: [
-                          RankingStatRow(label: 'Wickets', value: '${detail.wickets}'),
-                          RankingStatRow(label: 'Economy', value: detail.economy.toStringAsFixed(1)),
+                          RankingStatRow(
+                            label: 'Wickets',
+                            value: '${detail.wickets}',
+                          ),
+                          RankingStatRow(
+                            label: 'Economy',
+                            value: detail.economy.toStringAsFixed(1),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Achievements',
-                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white54,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     RankingDarkCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (var i = 0; i < detail.achievements.length; i++) ...[
+                          for (
+                            var i = 0;
+                            i < detail.achievements.length;
+                            i++
+                          ) ...[
                             if (i > 0) const SizedBox(height: 8),
                             Text(
                               detail.achievements[i],
@@ -264,8 +319,14 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                     RankingDarkCard(
                       child: Column(
                         children: [
-                          RankingStatRow(label: 'Wickets', value: '${detail.wickets}'),
-                          RankingStatRow(label: 'Economy', value: detail.economy.toStringAsFixed(1)),
+                          RankingStatRow(
+                            label: 'Wickets',
+                            value: '${detail.wickets}',
+                          ),
+                          RankingStatRow(
+                            label: 'Economy',
+                            value: detail.economy.toStringAsFixed(1),
+                          ),
                         ],
                       ),
                     ),
@@ -274,7 +335,9 @@ class PlayerRankingDetailScreen extends StatelessWidget {
                       label: 'View Full Player Profile  >',
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ProfileDetailsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileDetailsScreen(),
+                          ),
                         );
                       },
                     ),

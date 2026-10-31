@@ -18,7 +18,9 @@ class PrizeCreditedScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -44,7 +46,10 @@ class PrizeCreditedScreen extends StatelessWidget {
                           ),
                           Text(
                             d.dateLabel,
-                            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -78,7 +83,11 @@ class PrizeCreditedScreen extends StatelessWidget {
                               color: AppColors.mintGreen,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.check_rounded, color: Color(0xFF0A0B12), size: 36),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              color: Color(0xFF0A0B12),
+                              size: 36,
+                            ),
                           ),
                           const SizedBox(height: 18),
                           Text(
@@ -95,7 +104,10 @@ class PrizeCreditedScreen extends StatelessWidget {
                           Text(
                             'Your tournament prize has been credited.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Container(
@@ -195,7 +207,11 @@ class PrizeCreditedScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.check_circle, color: AppColors.amberAccent, size: 18),
+                              const Icon(
+                                Icons.check_circle,
+                                color: AppColors.amberAccent,
+                                size: 18,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'Prize Credited',
@@ -211,7 +227,10 @@ class PrizeCreditedScreen extends StatelessWidget {
                           Text(
                             'Credited to SPOTO Wallet · ${d.creditedOnLabel}',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 12.5),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                            ),
                           ),
                         ],
                       ),
@@ -220,7 +239,9 @@ class PrizeCreditedScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const WalletTransactionsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const WalletTransactionsScreen(),
+                          ),
                         );
                       },
                       child: Container(
@@ -232,7 +253,9 @@ class PrizeCreditedScreen extends StatelessWidget {
                           gradient: AppColors.bannerGradient,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF8A1E).withValues(alpha: 0.35),
+                              color: const Color(
+                                0xFFFF8A1E,
+                              ).withValues(alpha: 0.35),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -318,7 +341,10 @@ class _CreditLine extends StatelessWidget {
                 'Txn $txnId',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 11.5),
+                style: GoogleFonts.quicksand(
+                  color: Colors.white38,
+                  fontSize: 11.5,
+                ),
               ),
             ],
           ),

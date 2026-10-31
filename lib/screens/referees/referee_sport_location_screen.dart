@@ -10,10 +10,12 @@ class RefereeSportLocationScreen extends StatefulWidget {
   const RefereeSportLocationScreen({super.key});
 
   @override
-  State<RefereeSportLocationScreen> createState() => _RefereeSportLocationScreenState();
+  State<RefereeSportLocationScreen> createState() =>
+      _RefereeSportLocationScreenState();
 }
 
-class _RefereeSportLocationScreenState extends State<RefereeSportLocationScreen> {
+class _RefereeSportLocationScreenState
+    extends State<RefereeSportLocationScreen> {
   static const _selectedFill = Color(0xFF6A9DB5);
   static const _tileFill = Color(0xFF12161D);
   static const _wellUnselected = Color(0xFF1C222C);
@@ -41,10 +43,7 @@ class _RefereeSportLocationScreenState extends State<RefereeSportLocationScreen>
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RefereeGameLocationScreen(
-          draft: RefereeBookingDraft(
-            sport: _sports[index].$2,
-            location: '',
-          ),
+          draft: RefereeBookingDraft(sport: _sports[index].$2, location: ''),
         ),
       ),
     );
@@ -122,7 +121,9 @@ class _RefereeSportLocationScreenState extends State<RefereeSportLocationScreen>
                           color: selected ? _selectedFill : _tileFill,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: selected ? Colors.transparent : const Color(0xFF252A33),
+                            color: selected
+                                ? Colors.transparent
+                                : const Color(0xFF252A33),
                           ),
                         ),
                         child: Column(
@@ -133,7 +134,9 @@ class _RefereeSportLocationScreenState extends State<RefereeSportLocationScreen>
                               height: 52,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: selected ? _wellSelected : _wellUnselected,
+                                color: selected
+                                    ? _wellSelected
+                                    : _wellUnselected,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
@@ -145,7 +148,9 @@ class _RefereeSportLocationScreenState extends State<RefereeSportLocationScreen>
                             Text(
                               _sports[index].$2,
                               style: GoogleFonts.quicksand(
-                                color: selected ? Colors.white : const Color(0xFF8B919C),
+                                color: selected
+                                    ? Colors.white
+                                    : const Color(0xFF8B919C),
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w500,
                               ),

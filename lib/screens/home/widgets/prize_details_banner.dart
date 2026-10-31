@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sporto/screens/home/prize_calculation_screen.dart';
+import 'package:sporto/screens/home/prize_credited_screen.dart';
+import 'package:sporto/screens/home/prize_details_screen.dart';
 import '../../../core/apiServices/user_api.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/prize_utils.dart';
-import '../prize_details_screen.dart';
+import '../prize_details_screen_p.dart';
 
 /// Loads the user's latest prize payout and shows [PrizeDetailsBanner] for it.
 /// Renders nothing while loading, on error, or when the user has no prizes.
@@ -27,25 +30,71 @@ class _LatestPrizeBannerState extends State<LatestPrizeBanner> {
 
   Future<void> _load() async {
     try {
+      print('========== GET MY PRIZES API START ==========');
+
       final res = await UserApis().getMyPrizes(1, 20);
-      if (res is! Map || res['success'] != true || res['data'] is! List) return;
+
+      print('API RESPONSE TYPE: ${res.runtimeType}');
+      print('API RESPONSE: $res');
+
+      if (res is Map) {
+        print('API SUCCESS: ${res['success']}');
+        print('API DATA: ${res['data']}');
+
+        if (res['data'] is List) {
+          print('TOTAL PRIZES: ${(res['data'] as List).length}');
+
+          for (int i = 0; i < (res['data'] as List).length; i++) {
+            final item = (res['data'] as List)[i];
+
+            print('---------- PRIZE $i ----------');
+            print('PRIZE DATA: $item');
+
+            if (item is Map) {
+              final p = Map<String, dynamic>.from(item);
+
+              print('TOURNAMENT ID: ${PrizeUtils.tournamentId(p)}');
+              print('PAYOUT STATUS: ${PrizeUtils.status(p)}');
+            }
+          }
+        }
+      }
+
+      if (res is! Map || res['success'] != true || res['data'] is! List) {
+        print('API VALIDATION FAILED');
+        print('============================================');
+        return;
+      }
+
       Map<String, dynamic>? pick;
+
       for (final item in res['data'] as List) {
         if (item is! Map) continue;
+
         final p = Map<String, dynamic>.from(item);
+
         if (PrizeUtils.tournamentId(p) == null) continue;
-        // Prefer a payout still in progress; otherwise the first (latest) one.
+
         final s = PrizeUtils.status(p);
+
         if (s == PayoutStatus.pending || s == PayoutStatus.processing) {
           pick = p;
           break;
         }
+
         pick ??= p;
       }
+
+      print('SELECTED PAYOUT: $pick');
+
       if (!mounted) return;
+
       setState(() => _payout = pick);
-    } catch (_) {
-      // Banner is optional; stay hidden on failure.
+
+      print('========== GET MY PRIZES API END ==========');
+    } catch (e, stackTrace) {
+      print('API ERROR: $e');
+      print('STACK TRACE: $stackTrace');
     }
   }
 
@@ -66,6 +115,15 @@ class _LatestPrizeBannerState extends State<LatestPrizeBanner> {
               ),
             ),
           );
+          // Navigator.of(context).push(
+          //   MaterialPageRoute(
+          //     builder: (_) => PrizeDetailsScreen(
+          //       // tournamentId: PrizeUtils.tournamentId(p)!,
+          //       // tournamentName: PrizeUtils.tournamentName(p),
+          //       // details: ,
+          //     ),
+          //   ),
+          // );
         },
       ),
     );
@@ -80,11 +138,11 @@ class PrizeDetailsBanner extends StatelessWidget {
   final Map<String, dynamic> payout;
 
   String get _statusText => switch (PrizeUtils.status(payout)) {
-        PayoutStatus.credited => 'Your prize has been credited.',
-        PayoutStatus.failed => 'Your prize payout failed.',
-        PayoutStatus.processing => 'Your prize is being processed.',
-        PayoutStatus.pending => 'Your prize is pending.',
-      };
+    PayoutStatus.credited => 'Your prize has been credited.',
+    PayoutStatus.failed => 'Your prize payout failed.',
+    PayoutStatus.processing => 'Your prize is being processed.',
+    PayoutStatus.pending => 'Your prize is pending.',
+  };
 
   static const _gold = Color(0xFFE3A93D);
 
@@ -96,7 +154,9 @@ class PrizeDetailsBanner extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF3AD7E8).withValues(alpha: 0.45)),
+          border: Border.all(
+            color: const Color(0xFF3AD7E8).withValues(alpha: 0.45),
+          ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF3AD7E8).withValues(alpha: 0.18),
@@ -139,7 +199,10 @@ class PrizeDetailsBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(16),
@@ -147,7 +210,11 @@ class PrizeDetailsBanner extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.emoji_events_rounded, color: _gold, size: 14),
+                          const Icon(
+                            Icons.emoji_events_rounded,
+                            color: _gold,
+                            size: 14,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             'Prize Won!',
@@ -197,7 +264,9 @@ class PrizeDetailsBanner extends StatelessWidget {
                                 height: 1.25,
                               ),
                             ),
-                            TextSpan(text: ' · ${PrizeUtils.formatAmount(payout)}'),
+                            TextSpan(
+                              text: ' · ${PrizeUtils.formatAmount(payout)}',
+                            ),
                           ],
                         ),
                         maxLines: 2,
@@ -207,7 +276,11 @@ class PrizeDetailsBanner extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.schedule_rounded, color: Colors.white70, size: 14),
+                        const Icon(
+                          Icons.schedule_rounded,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
@@ -222,7 +295,10 @@ class PrizeDetailsBanner extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.infoBlue,
                             borderRadius: BorderRadius.circular(16),
