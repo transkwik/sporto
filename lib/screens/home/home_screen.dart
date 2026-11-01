@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:sporto/screens/home/Individual_player_award/Individual_Player_Award_card.dart';
+import 'package:sporto/screens/home/Individual_player_award/Individual_Player_Award_deatisl.dart'
+    show PrizeDetailsScreenindividualPrise;
 import 'providers/home_provider.dart';
 import '../auth/providers/auth_provider.dart';
 import '../auth/providers/location_provider.dart';
@@ -291,6 +294,17 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
               );
             },
           ),
+
+          // const SizedBox(height: 12),
+          // IndividualPlayerAwardCard(
+          //   onTap: () {
+          //     Navigator.of(context).push(
+          //       MaterialPageRoute(
+          //         builder: (_) => const PrizeDetailsScreenindividualPrise(),
+          //       ),
+          //     );
+          //   },
+          // ),
           const SizedBox(height: 12),
           LatestPrizeBanner(key: ValueKey(_prizeRefresh)),
           Consumer<HomeProvider>(
@@ -540,6 +554,7 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
             ],
           ),
           const SizedBox(height: 25),
+
           HomeShortcutStrip(
             onTeamUp: () {
               Navigator.of(
