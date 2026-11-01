@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sporto/core/constants/app_colors.dart';
-import 'package:sporto/core/widgets/glass_back_button.dart';
 import 'package:sporto/models/prize_details_info.dart';
-import 'package:sporto/screens/home/prize_calculation_screen.dart';
-import 'package:sporto/screens/home/prize_distribution_screen.dart';
-import 'package:sporto/screens/profile/tournaments/my_tournament_details_screen.dart';
-import 'package:sporto/screens/profile/wallet/my_tournament_details_wallate_screen.dart';
-import 'package:sporto/screens/profile/wallet/prise_distubution_wallate_screen.dart';
 import 'package:sporto/screens/profile/wallet/prize_calculation_wallate_screen.dart';
+import 'package:sporto/screens/profile/wallet/prise_distubution_wallate_screen.dart';
+import 'package:sporto/screens/profile/wallet/my_tournament_details_wallate_screen.dart';
 
-/// Home → Prize Details: distribution timeline, team prize, and your lines.
-class PrizeDetailsWallateScreen extends StatelessWidget {
+class PrizeDetailsWallateScreen extends StatefulWidget {
   const PrizeDetailsWallateScreen({
     super.key,
     this.details = dummyPrizeDetails,
@@ -19,708 +13,685 @@ class PrizeDetailsWallateScreen extends StatelessWidget {
 
   final PrizeDetailsInfo details;
 
-  void _openCalculation(BuildContext context) {
+  @override
+  State<PrizeDetailsWallateScreen> createState() =>
+      _PrizeDetailsWallateScreenState();
+}
+
+class _PrizeDetailsWallateScreenState extends State<PrizeDetailsWallateScreen> {
+  bool _showAllPrizes = true;
+
+  static const Color _background = Color(0xFF080B0E);
+  static const Color _card = Color(0xFF1C2026);
+  static const Color _muted = Color(0xFF999DA3);
+  static const Color _amber = Color(0xFFFFB900);
+  static const Color _green = Color(0xFF62EF91);
+
+  TextStyle get _mutedStyle =>
+      GoogleFonts.quicksand(color: _muted, fontSize: 11.5);
+
+  void _openCalculation() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PrizeCalculationWallateScreen(details: details),
+        builder: (_) => PrizeCalculationWallateScreen(details: widget.details),
       ),
+    );
+  }
+
+  void _openDistribution() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PrizeDistributionWallateScreen(details: widget.details),
+      ),
+    );
+  }
+
+  void _openTournamentDetails() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MyTournamentDetailswallateScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final d = details;
+    final d = widget.details;
+    final prizes = d.yourPrizes;
+    final visiblePrizes = _showAllPrizes ? prizes : prizes.take(3).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.authBackgroundBottom,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.authBackgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  children: [
-                    GlassBackButton(onTap: () => Navigator.of(context).pop()),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Prize Details',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            d.dateLabel,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+      backgroundColor: _background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(d),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+                children: [
+                  _buildMatchCard(d),
+                  const SizedBox(height: 14),
+                  _buildInfoCard(d),
+                  const SizedBox(height: 20),
+
+                  // Compact statistic cards, using fields already in the model.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          value: d.eligiblePlayers,
+                          label: 'Eligible Players',
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                  children: [
-                    _LeagueHeader(details: d),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Distribution Progress',
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white54,
-                        fontSize: 13.5,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildStatCard(
+                          value: d.teamPrize,
+                          label: 'Team Prize',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _ProgressCard(steps: d.steps),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Winning Team Prize',
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white54,
-                        fontSize: 13.5,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildStatCard(
+                          value: d.expectedShare,
+                          label: 'Your Share',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _WinningTeamCard(details: d),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Your Prizes',
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white54,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    for (final line in d.yourPrizes) ...[
-                      _YourPrizeRow(item: line),
-                      const SizedBox(height: 10),
                     ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Total prize',
-                              style: GoogleFonts.quicksand(
-                                color: Colors.white54,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            d.totalPrize,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.emoji_events_rounded,
+                        color: _amber,
+                        size: 17,
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    GestureDetector(
-                      onTap: () => _openCalculation(context),
-                      child: Container(
-                        width: double.infinity,
-                        height: 48,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: const Color(0xFFE85A6B)),
-                        ),
-                        child: Text(
-                          'See Prize Calculation',
-                          style: GoogleFonts.quicksand(
-                            color: const Color(0xFFE85A6B),
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                          ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Tournament Prizes',
+                        style: GoogleFonts.quicksand(
+                          color: _amber,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => PrizeDistributionWallateScreen(
-                              details: details,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 48,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: AppColors.amberAccent),
-                        ),
-                        child: Text(
-                          'Prize Distribution',
-                          style: GoogleFonts.quicksand(
-                            color: AppColors.amberAccent,
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                      const Spacer(),
+                      Text('${prizes.length} Prizes', style: _mutedStyle),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Special prize cards are shown only when prize entries exist.
+                  if (prizes.isNotEmpty)
                     Row(
                       children: [
                         Expanded(
-                          child: _OutlineAction(
-                            label: 'Tournament Details',
-                            onTap: () {
-                              // Navigator.of(context).push(
-                              //   MaterialPageRoute(
-                              //     builder: (_) =>
-                              //         MyTournamentDetailswallateScreen(
-                              //           tournament: dummyMyTournaments.last,
-                              //           // tournament: dummyMyTournaments.last,
-                              //         ),
-                              //   ),
-                              // );
-                            },
+                          child: _buildSpecialPrize(
+                            'Best Batsman',
+                            prizes.first.amountLabel,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _OutlineAction(
-                            label: 'Tournament History',
-                            onTap: () {
-                              // Navigator.of(context).push(
-                              //   MaterialPageRoute(
-                              //     builder: (_) => TeamHistoryScreen(
-                              //       team: dummyMyTeams.first,
-                              //     ),
-                              //   ),
-                              // );
-                            },
+                          child: _buildSpecialPrize(
+                            'Best Bowler',
+                            prizes.length > 1 ? prizes[1].amountLabel : '—',
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                  if (prizes.isNotEmpty) const SizedBox(height: 10),
+
+                  _buildPrizeList(visiblePrizes),
+                  if (prizes.length > 3) ...[
+                    const SizedBox(height: 10),
                     Center(
                       child: GestureDetector(
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Help Center coming soon.'),
-                            ),
-                          );
+                          setState(() => _showAllPrizes = !_showAllPrizes);
                         },
-                        child: Text(
-                          'Need help with this prize?',
-                          style: GoogleFonts.quicksand(
-                            color: AppColors.mintGreen,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF252E3B),
+                            borderRadius: BorderRadius.circular(13),
+                            border: Border.all(color: const Color(0xFF35475D)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _showAllPrizes
+                                    ? 'View Less'
+                                    : 'View All Prizes',
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Icon(
+                                _showAllPrizes
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: Colors.white70,
+                                size: 17,
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ],
-                ),
+
+                  const SizedBox(height: 22),
+                  Text(
+                    'Format',
+                    style: GoogleFonts.quicksand(
+                      color: _green,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildFormatCard(d),
+                  const SizedBox(height: 20),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-class _LeagueHeader extends StatelessWidget {
-  const _LeagueHeader({required this.details});
-
-  final PrizeDetailsInfo details;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161A22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF222632),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              details.sport,
-              style: GoogleFonts.quicksand(
-                color: Colors.white70,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            details.tournamentTitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.quicksand(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _StatusChip(
-                label: details.eventStatus,
-                color: AppColors.mintGreen,
-              ),
-              _StatusChip(
-                label: details.prizeStatus,
-                color: const Color(0xFFFF8A1E),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color),
-      ),
+  Widget _buildAppBar(PrizeDetailsInfo d) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.circle, size: 8, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.quicksand(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              height: 38,
+              width: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF202328),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({required this.steps});
-
-  final List<PrizeProgressStep> steps;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161A22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < steps.length; i++)
-            _ProgressRow(step: steps[i], isLast: i == steps.length - 1),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.step, required this.isLast});
-
-  final PrizeProgressStep step;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color dot;
-    Widget inner;
-    switch (step.state) {
-      case PrizeStepState.done:
-        dot = AppColors.mintGreen;
-        inner = const Icon(Icons.check, color: Colors.black, size: 12);
-      case PrizeStepState.current:
-        dot = AppColors.infoBlue;
-        inner = Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-        );
-      case PrizeStepState.pending:
-        dot = const Color(0xFF3A4150);
-        inner = const SizedBox.shrink();
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 22,
-          child: Column(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-                child: inner,
-              ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 28,
-                  color: step.state == PrizeStepState.pending
-                      ? const Color(0xFF2A303C)
-                      : AppColors.mintGreen.withValues(alpha: 0.45),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  step.title,
+                  d.tournamentTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.quicksand(
-                    color: step.state == PrizeStepState.pending
-                        ? Colors.white38
-                        : Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                if (step.subtitle.isNotEmpty)
-                  Text(
-                    step.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white54,
-                      fontSize: 11.5,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _WinningTeamCard extends StatelessWidget {
-  const _WinningTeamCard({required this.details});
-
-  final PrizeDetailsInfo details;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161A22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.amberAccent.withValues(alpha: 0.7),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.emoji_events_rounded,
-                  color: AppColors.amberAccent,
-                  size: 14,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Winning Team',
-                  style: GoogleFonts.quicksand(
-                    color: AppColors.amberAccent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.sports_cricket_rounded,
-                color: Colors.white70,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 2),
+                Row(
                   children: [
-                    Text(
-                      details.winningEventTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: _muted,
+                      size: 13,
                     ),
-                    Text(
-                      details.winningEventSubtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white54,
-                        fontSize: 12,
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        d.dateLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _mutedStyle,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _KV(
-            label: 'Team Prize',
-            value: details.teamPrize,
-            valueColor: AppColors.amberAccent,
-          ),
-          const SizedBox(height: 8),
-          _KV(label: 'Eligible Players', value: details.eligiblePlayers),
-          const SizedBox(height: 8),
-          _KV(
-            label: 'Your Expected Share',
-            value: details.expectedShare,
-            valueColor: AppColors.amberAccent,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            details.creditNote,
-            style: GoogleFonts.quicksand(
-              color: Colors.white38,
-              fontSize: 11.5,
-              height: 1.4,
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _KV extends StatelessWidget {
-  const _KV({required this.label, required this.value, this.valueColor});
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.quicksand(
-              color: Colors.white70,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
+  Widget _buildMatchCard(PrizeDetailsInfo d) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF53342F), Color(0xFF102D21), Color(0xFF28331A)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE92343),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      d.eventStatus,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    d.dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 5, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    d.winningEventTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'Vs',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    d.winningEventSubtitle,
+                    textAlign: TextAlign.end,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text('Match Prize', style: _mutedStyle),
+                      const SizedBox(height: 5),
+                      Text(
+                        '🏆 ${d.teamPrize}',
+                        style: GoogleFonts.quicksand(
+                          color: _amber,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text('Prize Status', style: _mutedStyle),
+                      const SizedBox(height: 5),
+                      Text(
+                        d.prizeStatus,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(PrizeDetailsInfo d) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF14291F), Color(0xFF111B19)],
         ),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _infoColumn('Sport', d.sport)),
+          Expanded(
+            child: _infoColumn(
+              'Eligible Players',
+              d.eligiblePlayers,
+              alignEnd: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoColumn(String label, String value, {bool alignEnd = false}) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _mutedStyle),
+        const SizedBox(height: 4),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.quicksand(
-            color: valueColor ?? Colors.white,
-            fontSize: 13.5,
+            color: Colors.white,
+            fontSize: 12,
             fontWeight: FontWeight.w800,
           ),
         ),
       ],
     );
   }
-}
 
-class _YourPrizeRow extends StatelessWidget {
-  const _YourPrizeRow({required this.item});
-
-  final PrizeLineItem item;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatCard({required String value, required String label}) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF161A22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.glassBorder),
+        color: const Color(0xFF24231C),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.sports_cricket_rounded,
-            color: Colors.white70,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  item.amountLabel,
-                  style: GoogleFonts.quicksand(
-                    color: AppColors.amberAccent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.infoBlue),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.sync_rounded,
-                  color: AppColors.infoBlue,
-                  size: 12,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  item.status,
-                  style: GoogleFonts.quicksand(
-                    color: AppColors.infoBlue,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.quicksand(color: _muted, fontSize: 9.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecialPrize(String title, String amount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Text(title, style: _mutedStyle),
+          const SizedBox(height: 5),
+          Text(
+            amount,
+            style: GoogleFonts.quicksand(
+              color: _amber,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _OutlineAction extends StatelessWidget {
-  const _OutlineAction({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
+  Widget _buildPrizeList(List<PrizeLineItem> prizes) {
+    if (prizes.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.infoBlue),
+          color: _card,
+          borderRadius: BorderRadius.circular(17),
         ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.quicksand(
-            color: AppColors.infoBlue,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
+        child: Center(
+          child: Text('No prize details available', style: _mutedStyle),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(17),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (int i = 0; i < prizes.length; i++)
+            _buildPrizeRow(prizes[i], i, i == prizes.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrizeRow(PrizeLineItem item, int index, bool isLast) {
+    final List<Color> badgeColors = [
+      const Color(0xFFFFCC32),
+      const Color(0xFF70F59A),
+      const Color(0xFFFF8055),
+      const Color(0xFF383C42),
+    ];
+
+    final Color badgeColor = index < badgeColors.length
+        ? badgeColors[index]
+        : badgeColors[3];
+    final Color numberColor = index < 3 ? Colors.black : Colors.white54;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                height: 27,
+                width: 27,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: GoogleFonts.quicksand(
+                    color: numberColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                item.amountLabel,
+                style: GoogleFonts.quicksand(
+                  color: index < 3 ? _amber : Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
+        if (!isLast)
+          Container(height: 1, color: Colors.black.withValues(alpha: 0.65)),
+      ],
+    );
+  }
+
+  Widget _buildFormatCard(PrizeDetailsInfo d) {
+    if (d.steps.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF244333)),
+        ),
+        child: Text(
+          'Tournament format details will be updated soon.',
+          style: _mutedStyle,
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF244333)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < d.steps.length; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i == d.steps.length - 1 ? 0 : 10,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Icon(Icons.circle_outlined, size: 9, color: _green),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          d.steps[i].title,
+                          style: GoogleFonts.quicksand(
+                            color: _muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (d.steps[i].subtitle.isNotEmpty)
+                          Text(
+                            d.steps[i].subtitle,
+                            style: GoogleFonts.quicksand(
+                              color: _muted,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

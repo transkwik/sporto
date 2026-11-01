@@ -748,19 +748,22 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
                 itemCount: displayList.length,
                 itemBuilder: (context, index) {
                   final t = displayList[index] as Map<String, dynamic>;
-                  return TournamentCard(
-                    tournament: t,
-                    onTap: () {
-                      final id = t['id'];
-                      if (id != null) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                TournamentDetailScreen(tournamentId: id),
-                          ),
-                        );
-                      }
-                    },
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: TournamentCard(
+                      tournament: t,
+                      onTap: () {
+                        final id = t['id'];
+                        if (id != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TournamentDetailScreen(tournamentId: id),
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   );
                 },
               );

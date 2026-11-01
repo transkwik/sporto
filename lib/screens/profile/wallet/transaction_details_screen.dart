@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sporto/screens/profile/wallet/RelatedTransactionsWidget.dart';
 import 'package:sporto/screens/profile/wallet/prise_details_wallate_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/wallet_utils.dart';
@@ -31,20 +32,22 @@ class TransactionDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
         decoration: const BoxDecoration(
           gradient: AppColors.authBackgroundGradient,
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Row(
                   children: [
                     GlassBackButton(onTap: () => Navigator.of(context).pop()),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
+                        // mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -71,10 +74,9 @@ class TransactionDetailsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                const SizedBox(height: 20),
+                Column(
+                  // padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   children: [
                     Container(
                       width: double.infinity,
@@ -228,8 +230,10 @@ class TransactionDetailsScreen extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
-            ],
+                RelatedTransactionsWidget(),
+                // RelatedTransactionsWidget(),
+              ],
+            ),
           ),
         ),
       ),
@@ -262,7 +266,7 @@ class TournamentDetailsCard extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 35),
+        const SizedBox(height: 10),
 
         // Tournament Card
         GestureDetector(

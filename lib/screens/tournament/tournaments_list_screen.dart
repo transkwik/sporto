@@ -113,20 +113,23 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                             );
                           }
                           final t = list[index] as Map<String, dynamic>;
-                          return TournamentCard(
-                            tournament: t,
-                            onTap: () {
-                              final id = t['id'];
-                              if (id != null) {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => TournamentDetailScreen(
-                                      tournamentId: id,
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: TournamentCard(
+                              tournament: t,
+                              onTap: () {
+                                final id = t['id'];
+                                if (id != null) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => TournamentDetailScreen(
+                                        tournamentId: id,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }
-                            },
+                                  );
+                                }
+                              },
+                            ),
                           );
                         },
                       ),
