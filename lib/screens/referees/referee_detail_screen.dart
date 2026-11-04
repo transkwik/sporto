@@ -4,6 +4,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/referee_info.dart';
 import 'referee_booking_summary_screen.dart';
+import 'referee_schedule_screen.dart';
+import 'widgets/referee_venue_card.dart';
 
 class RefereeDetailScreen extends StatelessWidget {
   const RefereeDetailScreen({super.key, required this.official, this.draft});
@@ -14,6 +16,14 @@ class RefereeDetailScreen extends StatelessWidget {
   static const _pageBg = Color(0xFF0B0D12);
   static const _mint = Color(0xFF3DDC97);
   static const _card = Color(0xFF141820);
+
+  /// Draft from the booking flow, or a default one when opened from the hub.
+  RefereeBookingDraft get _bookingDraft =>
+      draft ??
+      RefereeBookingDraft(
+        sport: official.sport,
+        location: 'Kompally, Hyderabad',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +168,7 @@ class RefereeDetailScreen extends StatelessWidget {
                         children: [
                           _PriceRow('Hourly', official.hourlyFeeLabel),
                           const Divider(color: Color(0xFF2A3140), height: 1),
-                          _PriceRow('Daily', official.dailyFeeLabel),
+                          _PriceRow('Per Day (8 hrs)', official.dailyFeeLabel),
                         ],
                       ),
                     ),
@@ -217,53 +227,11 @@ class RefereeDetailScreen extends StatelessWidget {
                         ),
                       ),
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A1228), Color(0xFF12161D)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('🏏', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 6),
-                              Text(
-                                draft?.sport ?? official.sport,
-                                style: GoogleFonts.quicksand(
-                                  color: _mint,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Icon(Icons.location_on_rounded, color: _mint, size: 16),
-                              SizedBox(width: 4),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'KPHB Indoor Stadium',
-                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                                    ),
-                                    Text('Kompally, Hyderabad', style: TextStyle(color: Colors.white54, fontSize: 12.5)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    RefereeVenueCard(
+                      draft: _bookingDraft,
+                      footer: draft != null
+                          ? '${draft!.dateLabel}  •  ${draft!.timeRangeLabel}  •  ${draft!.durationLabel}'
+                          : null,
                     ),
                   ],
                 ),
@@ -274,14 +242,16 @@ class RefereeDetailScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => RefereeBookingSummaryScreen(
-                          draft: (draft ??
-                                  RefereeBookingDraft(
-                                    sport: official.sport,
-                                    location: 'KPHB Indoor Stadium, Kompally, Hyderabad',
-                                  ))
-                              .copyWith(official: official),
-                        ),
+                        builder: (_) {
+                          final next = _bookingDraft.copyWith(
+                            autoMatch: false,
+                            official: official,
+                          );
+                          // Opened from the hub (no schedule yet) → pick slot first.
+                          return next.startAt == null
+                              ? RefereeScheduleScreen(draft: next)
+                              : RefereeBookingSummaryScreen(draft: next);
+                        },
                       ),
                     );
                   },

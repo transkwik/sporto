@@ -1,42 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/referee_info.dart';
 import 'referee_detail_screen.dart';
 import 'widgets/referee_assignment_card.dart';
+import 'widgets/referee_venue_card.dart';
 
-/// Register Individually → Choose Referee (dummy).
+/// Browse flow: Schedule → Choose Referee → Referee Profile.
 class RefereeChooseListScreen extends StatefulWidget {
   const RefereeChooseListScreen({super.key, required this.draft});
 
   final RefereeBookingDraft draft;
 
   @override
-  State<RefereeChooseListScreen> createState() => _RefereeChooseListScreenState();
+  State<RefereeChooseListScreen> createState() =>
+      _RefereeChooseListScreenState();
 }
 
 class _RefereeChooseListScreenState extends State<RefereeChooseListScreen> {
   static const _pageBg = Color(0xFF0B0D12);
   static const _mint = Color(0xFF3DDC97);
-  static const _sorts = ['Best Match', 'Top Rated', 'Closest', 'Lowest Price', 'More'];
+  static const _sorts = ['Best Match', 'Top Rated', 'Closest', 'Lowest Price'];
 
   int _sort = 0;
 
   List<RefereeOfficial> get _officials {
-    final list = List<RefereeOfficial>.from(dummyLastAssignedReferees);
-    if (_sort == 1) {
-      list.sort((a, b) => b.rating.compareTo(a.rating));
-    } else if (_sort == 2) {
-      list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-    } else if (_sort == 3) {
-      list.sort((a, b) => a.hourlyFeeLabel.compareTo(b.hourlyFeeLabel));
+    // Show referees for the chosen sport; fall back to everyone if none match.
+    final sport = widget.draft.sport.toLowerCase();
+    var list = dummyAvailableReferees
+        .where((o) => o.sport.toLowerCase() == sport)
+        .toList();
+    if (list.isEmpty) list = List<RefereeOfficial>.from(dummyAvailableReferees);
+
+    int price(RefereeOfficial o) => RefereeBookingDraft.parseRupees(
+      widget.draft.hourly ? o.hourlyFeeLabel : o.dailyFeeLabel,
+    );
+
+    switch (_sort) {
+      case 1:
+        list.sort((a, b) => b.rating.compareTo(a.rating));
+      case 2:
+        list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      case 3:
+        list.sort((a, b) => price(a).compareTo(price(b)));
+      default:
+        // Best match: available first, then rating, then distance.
+        list.sort((a, b) {
+          if (a.available != b.available) return a.available ? -1 : 1;
+          final r = b.rating.compareTo(a.rating);
+          return r != 0 ? r : a.distanceKm.compareTo(b.distanceKm);
+        });
     }
     return list;
   }
 
   @override
   Widget build(BuildContext context) {
+    final officials = _officials;
     return Scaffold(
       backgroundColor: _pageBg,
       body: ColoredBox(
@@ -66,69 +86,10 @@ class _RefereeChooseListScreenState extends State<RefereeChooseListScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A1228), Color(0xFF12161D)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('🏏', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 6),
-                              Text(
-                                widget.draft.sport,
-                                style: GoogleFonts.quicksand(
-                                  color: _mint,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_rounded, color: _mint, size: 16),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'KPHB Indoor Stadium',
-                                      style: GoogleFonts.quicksand(
-                                        color: Colors.white,
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Kompally, Hyderabad',
-                                      style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Center(
-                            child: Text(
-                              '${widget.draft.dateLabel}  •  ${widget.draft.timeLabel}',
-                              style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12.5),
-                            ),
-                          ),
-                        ],
-                      ),
+                    RefereeVenueCard(
+                      draft: widget.draft,
+                      footer:
+                          '${widget.draft.dateLabel}  •  ${widget.draft.timeRangeLabel}  •  ${widget.draft.durationLabel}',
                     ),
                     const SizedBox(height: 18),
                     Text(
@@ -152,7 +113,10 @@ class _RefereeChooseListScreenState extends State<RefereeChooseListScreen> {
                             return Center(
                               child: Text(
                                 'Sort By',
-                                style: GoogleFonts.quicksand(color: Colors.white38, fontSize: 12.5),
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white38,
+                                  fontSize: 12.5,
+                                ),
                               ),
                             );
                           }
@@ -161,16 +125,22 @@ class _RefereeChooseListScreenState extends State<RefereeChooseListScreen> {
                           return GestureDetector(
                             onTap: () => setState(() => _sort = i),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: selected ? _mint : const Color(0xFF1A1F28),
+                                color: selected
+                                    ? _mint
+                                    : const Color(0xFF1A1F28),
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Text(
                                 _sorts[i],
                                 style: GoogleFonts.quicksand(
-                                  color: selected ? Colors.black : Colors.white70,
+                                  color: selected
+                                      ? Colors.black
+                                      : Colors.white70,
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -181,7 +151,7 @@ class _RefereeChooseListScreenState extends State<RefereeChooseListScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    for (final official in _officials)
+                    for (final official in officials)
                       RefereeOfficialCard(
                         official: official,
                         onTap: () {

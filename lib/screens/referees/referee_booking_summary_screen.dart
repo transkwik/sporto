@@ -4,8 +4,10 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../models/referee_info.dart';
 import 'referee_payment_screen.dart';
+import 'widgets/referee_venue_card.dart';
 
-/// Hourly → Confirm Booking (dummy).
+/// Confirm Booking (Quick Book, referee "To Be Assigned") or
+/// Booking Summary (Browse, a chosen referee). Both continue to Payment.
 class RefereeBookingSummaryScreen extends StatelessWidget {
   const RefereeBookingSummaryScreen({super.key, required this.draft});
 
@@ -19,10 +21,8 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final official = draft.official;
-    final assigned = official != null;
-    final refereeFee = assigned ? '₹400' : '₹350';
-    final platformFee = assigned ? '₹40' : '₹35';
-    final total = assigned ? '₹440' : '₹385';
+    final isQuick = draft.autoMatch || official == null;
+    final total = RefereeBookingDraft.rupees(draft.totalAmount);
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -37,10 +37,12 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        GlassBackButton(onTap: () => Navigator.of(context).pop()),
+                        GlassBackButton(
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
                         const SizedBox(width: 10),
                         Text(
-                          assigned ? 'Booking Summary' : 'Confirm Booking',
+                          isQuick ? 'Confirm Booking' : 'Booking Summary',
                           style: GoogleFonts.quicksand(
                             color: Colors.white,
                             fontSize: 18,
@@ -50,121 +52,13 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    assigned
-                        ? Container(
-                            padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF2A1638), Color(0xFF1A1228)],
-                              ),
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(28),
-                                  child: official.photoUrl != null
-                                      ? Image.network(
-                                          official.photoUrl!,
-                                          width: 52,
-                                          height: 52,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => const SizedBox(width: 52, height: 52),
-                                        )
-                                      : const SizedBox(width: 52, height: 52),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        official.name,
-                                        style: GoogleFonts.quicksand(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${official.sport}  •  ${official.experienceYears} yrs  •  ${official.level}',
-                                        style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 7,
-                                      height: 7,
-                                      decoration: const BoxDecoration(color: _mint, shape: BoxShape.circle),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      'Available',
-                                      style: GoogleFonts.quicksand(
-                                        color: _mint,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          )
-                        : Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1A1228), Color(0xFF12161D)],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text('🏏', style: TextStyle(fontSize: 16)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      draft.sport,
-                                      style: GoogleFonts.quicksand(
-                                        color: _mint,
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                const Row(
-                                  children: [
-                                    Icon(Icons.location_on_rounded, color: _mint, size: 16),
-                                    SizedBox(width: 4),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'KPHB Indoor Stadium',
-                                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                                          ),
-                                          Text('Kompally, Hyderabad', style: TextStyle(color: Colors.white54, fontSize: 12.5)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+                    if (isQuick)
+                      RefereeVenueCard(draft: draft)
+                    else
+                      _RefereeHeader(official: official!),
                     const SizedBox(height: 14),
+
+                    // Booking details
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                       decoration: BoxDecoration(
@@ -175,14 +69,20 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _MetaLabel('Tournament'),
-                          _MetaValue('SPOTO Random Cricket — Hyderabad'),
-                          const SizedBox(height: 12),
-                          _MetaLabel('Venue'),
-                          const _MetaValue('KPHB Indoor Stadium'),
-                          const SizedBox(height: 12),
-                          _MetaLabel('Location'),
-                          const _MetaValue('Kompally, Hyderabad'),
+                          if (!isQuick) ...[
+                            const _MetaLabel('Sport'),
+                            _MetaValue(draft.sport),
+                            const SizedBox(height: 12),
+                            const _MetaLabel('Venue'),
+                            _MetaValue(draft.venueTitle),
+                            const SizedBox(height: 12),
+                          ],
+                          const _MetaLabel('Location'),
+                          _MetaValue(
+                            draft.venueSubtitle.isNotEmpty
+                                ? draft.venueSubtitle
+                                : draft.venueTitle,
+                          ),
                           const SizedBox(height: 16),
                           Container(
                             decoration: BoxDecoration(
@@ -190,12 +90,27 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
-                              children: const [
-                                Expanded(child: _StatCell(label: 'Date', value: '24 Aug 2026')),
-                                _StatDivider(),
-                                Expanded(child: _StatCell(label: 'Start Time', value: '5:00 PM')),
-                                _StatDivider(),
-                                Expanded(child: _StatCell(label: 'Duration', value: '2 Hours')),
+                              children: [
+                                Expanded(
+                                  child: _StatCell(
+                                    label: 'Date',
+                                    value: draft.dateLabel,
+                                  ),
+                                ),
+                                const _StatDivider(),
+                                Expanded(
+                                  child: _StatCell(
+                                    label: 'Start Time',
+                                    value: draft.timeLabel,
+                                  ),
+                                ),
+                                const _StatDivider(),
+                                Expanded(
+                                  child: _StatCell(
+                                    label: 'Duration',
+                                    value: draft.durationLabel,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -204,10 +119,13 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                             child: Text.rich(
                               TextSpan(
                                 text: 'Booking Type: ',
-                                style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13),
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white54,
+                                  fontSize: 13,
+                                ),
                                 children: [
                                   TextSpan(
-                                    text: draft.hourly ? 'Hourly' : 'Daily',
+                                    text: draft.bookingTypeLabel,
                                     style: GoogleFonts.quicksand(
                                       color: _mint,
                                       fontSize: 13,
@@ -218,10 +136,24 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (draft.endLabel.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Center(
+                              child: Text(
+                                'Ends: ${draft.endLabel}',
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white54,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 14),
+
+                    // Info note
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                       decoration: BoxDecoration(
@@ -239,7 +171,9 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'This is a Quick Booking - your request goes out to eligible nearby referees after payment. The first to accept is assigned.',
+                              isQuick
+                                  ? 'This is a Quick Booking - your request goes out to eligible nearby referees after payment. The first to accept is assigned.'
+                                  : 'You have chosen ${official!.name}. The referee is booked as soon as your payment succeeds.',
                               style: GoogleFonts.quicksand(
                                 color: _gold,
                                 fontSize: 13,
@@ -252,6 +186,8 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 18),
+
+                    // Payment breakdown
                     Text(
                       'Payment',
                       style: GoogleFonts.quicksand(
@@ -270,9 +206,15 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          _PayRow('Referee Fee', refereeFee),
+                          _PayRow(
+                            'Referee Fee (${draft.feeBreakdownLabel})',
+                            RefereeBookingDraft.rupees(draft.refereeFee),
+                          ),
                           const SizedBox(height: 10),
-                          _PayRow('Platform Fee', platformFee),
+                          _PayRow(
+                            'Platform Fee',
+                            RefereeBookingDraft.rupees(draft.platformFee),
+                          ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 10),
                             child: Divider(color: Color(0xFF2A3140), height: 1),
@@ -280,7 +222,7 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                'Total Paid',
+                                'Total',
                                 style: GoogleFonts.quicksand(
                                   color: Colors.white,
                                   fontSize: 15,
@@ -308,6 +250,8 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(28, 8, 28, 20),
                 child: GestureDetector(
                   onTap: () {
+                    // Print the booking API payload in the exact key order.
+                    draft.printBookingPayload();
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => RefereePaymentScreen(draft: draft),
@@ -329,7 +273,7 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
                       ],
                     ),
                     child: Text(
-                      assigned ? 'Confirm & Pay $total' : 'Proceed To Booking',
+                      isQuick ? 'Proceed To Booking' : 'Confirm & Pay $total',
                       style: GoogleFonts.quicksand(
                         color: Colors.white,
                         fontSize: 15.5,
@@ -343,6 +287,112 @@ class RefereeBookingSummaryScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RefereeHeader extends StatelessWidget {
+  const _RefereeHeader({required this.official});
+  final RefereeOfficial official;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2A1638), Color(0xFF1A1228)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        children: [
+          RefereeAvatar(official: official, size: 52),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  official.name,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${official.sport}  •  ${official.experienceYears} yrs  •  ${official.level}',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: Color(0xFF3DDC97),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Available',
+            style: GoogleFonts.quicksand(
+              color: const Color(0xFF3DDC97),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Circular referee photo with an initials fallback (shared by booking screens).
+class RefereeAvatar extends StatelessWidget {
+  const RefereeAvatar({super.key, required this.official, this.size = 52});
+
+  final RefereeOfficial official;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = official.name.trim().split(RegExp(r'\s+'));
+    final initials = parts.length >= 2
+        ? '${parts[0][0]}${parts[1][0]}'
+        : official.name.isNotEmpty
+        ? official.name[0]
+        : 'R';
+    final fallback = Container(
+      width: size,
+      height: size,
+      color: const Color(0xFF2A241C),
+      alignment: Alignment.center,
+      child: Text(
+        initials.toUpperCase(),
+        style: GoogleFonts.quicksand(
+          color: AppColors.amberAccent,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size / 2),
+      child: official.photoUrl != null
+          ? Image.network(
+              official.photoUrl!,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => fallback,
+            )
+          : fallback,
     );
   }
 }
@@ -427,9 +477,16 @@ class _PayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(label, style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5)),
-        const Spacer(),
-        Text(value, style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5)),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.quicksand(color: Colors.white54, fontSize: 13.5),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13.5),
+        ),
       ],
     );
   }
