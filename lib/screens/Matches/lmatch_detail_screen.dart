@@ -1,32 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sporto/screens/Matches/ScorecardTabs.dart';
+import 'package:sporto/screens/Matches/StatesTab.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/glass_back_button.dart';
 import '../../core/apiServices/user_api.dart';
 import '../home/providers/home_provider.dart';
 import 'stadium_check_in_screen.dart';
 import 'predictor_leaderboard_screen.dart';
-import 'widgets/batsman_stats_table.dart';
-import 'widgets/bowler_stats_table.dart';
-import 'widgets/fan_reactions_row.dart';
-import 'widgets/live_score_panel.dart';
-import 'widgets/match_status_pills.dart';
-import 'widgets/outline_action_button.dart';
-import 'widgets/predict_earn_card.dart';
-import 'widgets/predictor_challenge_button.dart';
 import 'widgets/predictor_sheet.dart';
-import 'widgets/sporto_hype_meter_card.dart';
-import 'widgets/team_matchup_row.dart';
-import 'widgets/view_bracket_tile.dart';
+import 'live_tab.dart';
+// import 'ScorecardTab.dart';
+// import 'scorecard_tab.dart';
 
-/// Full live scorecard for a single match: current score, ball-by-ball
-/// breakdown of the over in progress, batsman/bowler stats, fan reactions,
-/// a score predictor, a fan "hype meter", and a predictor challenge CTA.
+/// Match screen shell: header, tab bar and data fetching. The tab bodies live
+/// in `live_tab.dart` and `scorecard_tab.dart`.
 class LiveMatchDetailScreen extends StatefulWidget {
-  const LiveMatchDetailScreen({
-    super.key,
-    required this.matchId,
-  });
+  const LiveMatchDetailScreen({super.key, required this.matchId});
 
   final int matchId;
 
@@ -34,7 +24,19 @@ class LiveMatchDetailScreen extends StatefulWidget {
   State<LiveMatchDetailScreen> createState() => _LiveMatchDetailScreenState();
 }
 
-class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
+class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen>
+    with SingleTickerProviderStateMixin {
+  static const _tabs = [
+    'Live',
+    'Scorecard',
+    'States',
+    'Info',
+    'Graph',
+    'Commentary',
+  ];
+
+  late final TabController _tabController;
+
   bool _isLoading = false;
 
   String _tournamentName = 'Live Match';
@@ -57,13 +59,34 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
   final String _likeCount = '384';
   final String _fireCount = '1.2k';
 
+  // Scorecard tab data
+  List<Map<String, dynamic>> _innings = [];
+  int _currentInning = 1;
+  String _rrr = '0.00';
+  String _statusText = '';
+  String _otherTeamLabel = '';
+  String _otherTeamScore = '';
+  Map<int, String> _playerNames = {};
+  Map<int, bool> _playerIsCaptain = {};
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+      initialIndex: 0,
+    );
     // Delay slightly so context.read works without error in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchLiveScore();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   /// Converts one ball in `current_over_deliveries` (an object such as
@@ -81,6 +104,20 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
     if (val == 0) return '•';
     return '$val';
   }
+
+  /// Name lookup used by the Scorecard tab.
+  String _resolveName(dynamic id, dynamic inlineName) {
+    if (inlineName != null &&
+        inlineName.toString().trim().isNotEmpty &&
+        inlineName != 'Unknown') {
+      return inlineName.toString().trim();
+    }
+    final parsed = int.tryParse(id?.toString() ?? '') ?? 0;
+    return _playerNames[parsed] ?? 'Player ($parsed)';
+  }
+
+  bool _isCaptain(dynamic id) =>
+      _playerIsCaptain[int.tryParse(id?.toString() ?? '') ?? 0] == true;
 
   Future<void> _fetchLiveScore() async {
     setState(() => _isLoading = true);
@@ -162,22 +199,36 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         }
 
         // Live score & overs from scoring.score
-        final scoreObj = (scoring?['score'] ?? data['score']) as Map<String, dynamic>?;
+        final scoreObj =
+            (scoring?['score'] ?? data['score']) as Map<String, dynamic>?;
         String newScore = _battingScore;
         String newOvers = _overs;
         String currentRunRate = _baseRunRate;
+        String otherScore = '';
 
         if (scoreObj != null) {
           final teamsScore = scoreObj['teams'] as Map<String, dynamic>?;
           if (teamsScore != null) {
+            // Score of the opposition (for the Scorecard summary card)
+            if (teamBId != null && teamsScore[teamBId.toString()] != null) {
+              final t = teamsScore[teamBId.toString()];
+              otherScore =
+                  '${t['score'] ?? 0}/${t['wickets'] ?? 0} (${t['overs'] ?? '0.0'})';
+            }
+
             Map<String, dynamic>? activeScoreData;
             if (teamAId != null && teamsScore[teamAId.toString()] != null) {
-              activeScoreData = teamsScore[teamAId.toString()] as Map<String, dynamic>?;
+              activeScoreData =
+                  teamsScore[teamAId.toString()] as Map<String, dynamic>?;
             } else if (teamsScore.isNotEmpty) {
-              activeScoreData = teamsScore.values.firstWhere(
-                (t) => (t['legal_balls'] ?? 0) > 0 || (t['score'] ?? 0) > 0,
-                orElse: () => teamsScore.values.first,
-              ) as Map<String, dynamic>?;
+              activeScoreData =
+                  teamsScore.values.firstWhere(
+                        (t) =>
+                            (t['legal_balls'] ?? 0) > 0 ||
+                            (t['score'] ?? 0) > 0,
+                        orElse: () => teamsScore.values.first,
+                      )
+                      as Map<String, dynamic>?;
             }
 
             if (activeScoreData != null) {
@@ -197,9 +248,14 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
               final double runsNum = double.tryParse(runs) ?? 0.0;
               final int legalBalls = activeScoreData['legal_balls'] is int
                   ? activeScoreData['legal_balls'] as int
-                  : int.tryParse(activeScoreData['legal_balls']?.toString() ?? '') ?? 0;
+                  : int.tryParse(
+                          activeScoreData['legal_balls']?.toString() ?? '',
+                        ) ??
+                        0;
               if (legalBalls > 0) {
-                currentRunRate = (runsNum / (legalBalls / 6.0)).toStringAsFixed(2);
+                currentRunRate = (runsNum / (legalBalls / 6.0)).toStringAsFixed(
+                  2,
+                );
               } else {
                 final double oversNum = double.tryParse(newOvers) ?? 0.0;
                 if (oversNum > 0) {
@@ -221,10 +277,18 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
             if (pList != null) {
               for (final p in pList) {
                 final uid = p['user_id'] ?? p['id'];
-                final pName = p['full_name'] ?? p['name'] ?? p['player_name'] ?? p['display_name'];
+                final pName =
+                    p['full_name'] ??
+                    p['name'] ??
+                    p['player_name'] ??
+                    p['display_name'];
                 if (uid != null) {
-                  final parsedUid = uid is int ? uid : int.tryParse(uid.toString()) ?? 0;
-                  if (pName != null && pName.toString().trim().isNotEmpty && pName != 'Unknown') {
+                  final parsedUid = uid is int
+                      ? uid
+                      : int.tryParse(uid.toString()) ?? 0;
+                  if (pName != null &&
+                      pName.toString().trim().isNotEmpty &&
+                      pName != 'Unknown') {
                     playerNames[parsedUid] = pName.toString().trim();
                   }
                   if (p['is_captain'] == true) {
@@ -238,46 +302,80 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
 
         // 2. Fetch team players roster from API if striker/bowler name is null
         final strikerObj = runtime?['current_striker'] as Map<String, dynamic>?;
-        final nonStrikerObj = runtime?['current_non_striker'] as Map<String, dynamic>?;
+        final nonStrikerObj =
+            runtime?['current_non_striker'] as Map<String, dynamic>?;
         final bowlerObj = runtime?['current_bowler'] as Map<String, dynamic>?;
 
-        final strikerUid = runtime?['current_striker_user_id'] ?? strikerObj?['user_id'];
-        final nonStrikerUid = runtime?['current_non_striker_user_id'] ?? nonStrikerObj?['user_id'];
-        final bowlerUid = runtime?['current_bowler_user_id'] ?? bowlerObj?['user_id'];
+        final strikerUid =
+            runtime?['current_striker_user_id'] ?? strikerObj?['user_id'];
+        final nonStrikerUid =
+            runtime?['current_non_striker_user_id'] ??
+            nonStrikerObj?['user_id'];
+        final bowlerUid =
+            runtime?['current_bowler_user_id'] ?? bowlerObj?['user_id'];
 
         bool needsPlayerLookup = false;
-        if (strikerUid != null && !playerNames.containsKey(strikerUid is int ? strikerUid : int.tryParse(strikerUid.toString()) ?? 0)) {
+        if (strikerUid != null &&
+            !playerNames.containsKey(
+              strikerUid is int
+                  ? strikerUid
+                  : int.tryParse(strikerUid.toString()) ?? 0,
+            )) {
           needsPlayerLookup = true;
         }
-        if (nonStrikerUid != null && !playerNames.containsKey(nonStrikerUid is int ? nonStrikerUid : int.tryParse(nonStrikerUid.toString()) ?? 0)) {
+        if (nonStrikerUid != null &&
+            !playerNames.containsKey(
+              nonStrikerUid is int
+                  ? nonStrikerUid
+                  : int.tryParse(nonStrikerUid.toString()) ?? 0,
+            )) {
           needsPlayerLookup = true;
         }
-        if (bowlerUid != null && !playerNames.containsKey(bowlerUid is int ? bowlerUid : int.tryParse(bowlerUid.toString()) ?? 0)) {
+        if (bowlerUid != null &&
+            !playerNames.containsKey(
+              bowlerUid is int
+                  ? bowlerUid
+                  : int.tryParse(bowlerUid.toString()) ?? 0,
+            )) {
           needsPlayerLookup = true;
         }
 
         if (needsPlayerLookup) {
           try {
             final futures = <Future<dynamic>>[];
-            if (teamAId != null) futures.add(UserApis().getTeamPlayers(teamAId));
-            if (teamBId != null && teamBId != teamAId) futures.add(UserApis().getTeamPlayers(teamBId));
+            if (teamAId != null) {
+              futures.add(UserApis().getTeamPlayers(teamAId));
+            }
+            if (teamBId != null && teamBId != teamAId) {
+              futures.add(UserApis().getTeamPlayers(teamBId));
+            }
 
             final results = await Future.wait(futures);
             for (final res in results) {
-              if (res != null && res['success'] == true && res['data'] is List) {
+              if (res != null &&
+                  res['success'] == true &&
+                  res['data'] is List) {
                 for (final p in res['data']) {
                   final uid = p['user_id'] ?? p['id'];
                   String pName = (p['player_name'] ?? '').toString().trim();
                   final user = p['user'];
                   if (user != null) {
-                    final fullName = user['profile']?['full_name'] ?? user['display_name'] ?? user['name'];
-                    if (fullName != null && fullName.toString().trim().isNotEmpty) {
+                    final fullName =
+                        user['profile']?['full_name'] ??
+                        user['display_name'] ??
+                        user['name'];
+                    if (fullName != null &&
+                        fullName.toString().trim().isNotEmpty) {
                       pName = fullName.toString().trim();
                     }
                   }
                   if (uid != null) {
-                    final parsedUid = uid is int ? uid : int.tryParse(uid.toString()) ?? 0;
-                    if (pName.isNotEmpty && pName != 'Captain' && pName != 'Unknown') {
+                    final parsedUid = uid is int
+                        ? uid
+                        : int.tryParse(uid.toString()) ?? 0;
+                    if (pName.isNotEmpty &&
+                        pName != 'Captain' &&
+                        pName != 'Unknown') {
                       playerNames[parsedUid] = pName;
                     }
                     if (p['is_captain'] == true) {
@@ -292,15 +390,26 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
           }
         }
 
-        String resolvePlayerName(dynamic uid, dynamic inlineName, String fallback, [dynamic inlineFullName]) {
-          if (inlineFullName != null && inlineFullName.toString().trim().isNotEmpty && inlineFullName != 'Unknown') {
+        String resolvePlayerName(
+          dynamic uid,
+          dynamic inlineName,
+          String fallback, [
+          dynamic inlineFullName,
+        ]) {
+          if (inlineFullName != null &&
+              inlineFullName.toString().trim().isNotEmpty &&
+              inlineFullName != 'Unknown') {
             return inlineFullName.toString().trim();
           }
-          if (inlineName != null && inlineName.toString().trim().isNotEmpty && inlineName != 'Unknown') {
+          if (inlineName != null &&
+              inlineName.toString().trim().isNotEmpty &&
+              inlineName != 'Unknown') {
             return inlineName.toString().trim();
           }
           if (uid != null) {
-            final parsedUid = uid is int ? uid : int.tryParse(uid.toString()) ?? 0;
+            final parsedUid = uid is int
+                ? uid
+                : int.tryParse(uid.toString()) ?? 0;
             if (playerNames.containsKey(parsedUid)) {
               return playerNames[parsedUid]!;
             }
@@ -330,31 +439,36 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
           final type = ev['type'];
           final evData = ev['data'];
           if (type == 'INNINGS_STARTED' && evData is Map) {
-            activeEventInning = evData['inning'] is int 
-                ? evData['inning'] as int 
+            activeEventInning = evData['inning'] is int
+                ? evData['inning'] as int
                 : int.tryParse(evData['inning']?.toString() ?? '1') ?? 1;
           }
 
           // Only process ball events for the CURRENT inning
-          if (activeEventInning == currentInning && type == 'BALL_RECORDED' && evData is Map<String, dynamic>) {
-            final sId = evData['striker_user_id'] is int 
-                ? evData['striker_user_id'] as int 
-                : int.tryParse(evData['striker_user_id']?.toString() ?? '') ?? 0;
-            final bId = evData['bowler_user_id'] is int 
-                ? evData['bowler_user_id'] as int 
+          if (activeEventInning == currentInning &&
+              type == 'BALL_RECORDED' &&
+              evData is Map<String, dynamic>) {
+            final sId = evData['striker_user_id'] is int
+                ? evData['striker_user_id'] as int
+                : int.tryParse(evData['striker_user_id']?.toString() ?? '') ??
+                      0;
+            final bId = evData['bowler_user_id'] is int
+                ? evData['bowler_user_id'] as int
                 : int.tryParse(evData['bowler_user_id']?.toString() ?? '') ?? 0;
 
-            final int val = evData['value'] is int 
-                ? evData['value'] as int 
+            final int val = evData['value'] is int
+                ? evData['value'] as int
                 : int.tryParse(evData['value']?.toString() ?? '') ?? 0;
-            final int delRuns = evData['delivery_runs'] is int 
-                ? evData['delivery_runs'] as int 
-                : int.tryParse(evData['delivery_runs']?.toString() ?? '') ?? val;
+            final int delRuns = evData['delivery_runs'] is int
+                ? evData['delivery_runs'] as int
+                : int.tryParse(evData['delivery_runs']?.toString() ?? '') ??
+                      val;
 
-            final bool isLegal = evData['legal_delivery'] == true || evData['legal'] == true;
+            final bool isLegal =
+                evData['legal_delivery'] == true || evData['legal'] == true;
             final String eventCode = (evData['event_code'] ?? '').toString();
-            final int overNum = evData['over_number'] is int 
-                ? evData['over_number'] as int 
+            final int overNum = evData['over_number'] is int
+                ? evData['over_number'] as int
                 : int.tryParse(evData['over_number']?.toString() ?? '') ?? 0;
 
             if (sId != 0) {
@@ -373,11 +487,12 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
               if (isLegal) {
                 bowlerLegalBalls[bId] = (bowlerLegalBalls[bId] ?? 0) + 1;
               }
-              final int w = evData['wickets'] is int 
-                  ? evData['wickets'] as int 
+              final int w = evData['wickets'] is int
+                  ? evData['wickets'] as int
                   : int.tryParse(evData['wickets']?.toString() ?? '') ?? 0;
               if (eventCode == 'WICKET' || w > 0) {
-                bowlerWickets[bId] = (bowlerWickets[bId] ?? 0) + (w > 0 ? w : 1);
+                bowlerWickets[bId] =
+                    (bowlerWickets[bId] ?? 0) + (w > 0 ? w : 1);
               }
             }
 
@@ -402,15 +517,24 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         // Build batsmen list
         final List<Map<String, dynamic>> newBatsmen = [];
         if (strikerUid != null) {
-          final int sId = strikerUid is int ? strikerUid : int.tryParse(strikerUid.toString()) ?? 0;
+          final int sId = strikerUid is int
+              ? strikerUid
+              : int.tryParse(strikerUid.toString()) ?? 0;
           final r = batsmanRuns[sId] ?? 0;
           final b = batsmanBalls[sId] ?? 0;
           final f = batsmanFours[sId] ?? 0;
           final s = batsmanSixes[sId] ?? 0;
           final sr = b > 0 ? ((r / b) * 100).toStringAsFixed(1) : '0.0';
-          final bool isCap = strikerObj?['is_captain'] == true || (playerIsCaptain[sId] == true);
+          final bool isCap =
+              strikerObj?['is_captain'] == true ||
+              (playerIsCaptain[sId] == true);
           newBatsmen.add({
-            'name': resolvePlayerName(strikerUid, strikerObj?['name'], 'Striker', strikerObj?['full_name']),
+            'name': resolvePlayerName(
+              strikerUid,
+              strikerObj?['name'],
+              'Striker',
+              strikerObj?['full_name'],
+            ),
             'runs': r,
             'balls': b,
             'fours': f,
@@ -421,15 +545,24 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         }
 
         if (nonStrikerUid != null && nonStrikerUid != strikerUid) {
-          final int nsId = nonStrikerUid is int ? nonStrikerUid : int.tryParse(nonStrikerUid.toString()) ?? 0;
+          final int nsId = nonStrikerUid is int
+              ? nonStrikerUid
+              : int.tryParse(nonStrikerUid.toString()) ?? 0;
           final r = batsmanRuns[nsId] ?? 0;
           final b = batsmanBalls[nsId] ?? 0;
           final f = batsmanFours[nsId] ?? 0;
           final s = batsmanSixes[nsId] ?? 0;
           final sr = b > 0 ? ((r / b) * 100).toStringAsFixed(1) : '0.0';
-          final bool isCap = nonStrikerObj?['is_captain'] == true || (playerIsCaptain[nsId] == true);
+          final bool isCap =
+              nonStrikerObj?['is_captain'] == true ||
+              (playerIsCaptain[nsId] == true);
           newBatsmen.add({
-            'name': resolvePlayerName(nonStrikerUid, nonStrikerObj?['name'], 'Non-Striker', nonStrikerObj?['full_name']),
+            'name': resolvePlayerName(
+              nonStrikerUid,
+              nonStrikerObj?['name'],
+              'Non-Striker',
+              nonStrikerObj?['full_name'],
+            ),
             'runs': r,
             'balls': b,
             'fours': f,
@@ -442,10 +575,20 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         // Build bowler list (current bowler first, followed by other bowlers who bowled)
         final List<Map<String, dynamic>> newBowlers = [];
         String currentBowlerName = 'No bowler';
-        final int currentBId = bowlerUid is int ? bowlerUid : int.tryParse(bowlerUid?.toString() ?? '') ?? 0;
+        final int currentBId = bowlerUid is int
+            ? bowlerUid
+            : int.tryParse(bowlerUid?.toString() ?? '') ?? 0;
 
-        if (currentBId != 0 && (bowlerObj != null && (bowlerObj['name'] != null || bowlerObj['full_name'] != null))) {
-          currentBowlerName = resolvePlayerName(bowlerUid, bowlerObj['name'], 'Bowler', bowlerObj['full_name']);
+        if (currentBId != 0 &&
+            (bowlerObj != null &&
+                (bowlerObj['name'] != null ||
+                    bowlerObj['full_name'] != null))) {
+          currentBowlerName = resolvePlayerName(
+            bowlerUid,
+            bowlerObj['name'],
+            'Bowler',
+            bowlerObj['full_name'],
+          );
           int curBWickets = bowlerWickets[currentBId] ?? 0;
           int curBRuns = bowlerRuns[currentBId] ?? 0;
           String curBOvers = '0.0';
@@ -459,7 +602,9 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
             curBEcon = (curBRuns / (legalB / 6.0)).toStringAsFixed(1);
           }
 
-          final bool curBowlerIsCap = bowlerObj['is_captain'] == true || (playerIsCaptain[currentBId] == true);
+          final bool curBowlerIsCap =
+              bowlerObj['is_captain'] == true ||
+              (playerIsCaptain[currentBId] == true);
           newBowlers.add({
             'name': currentBowlerName,
             'isCaptain': curBowlerIsCap,
@@ -501,30 +646,39 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         final inningsList = scoring?['innings'] as List<dynamic>?;
         if (inningsList != null) {
           for (final inn in inningsList) {
-            if (inn is Map && inn['innings_number']?.toString() == currentInning.toString()) {
+            if (inn is Map &&
+                inn['innings_number']?.toString() == currentInning.toString()) {
               currentInningsData = Map<String, dynamic>.from(inn);
             }
           }
         }
         final curInnObj = scoring?['current_innings'];
-        if (curInnObj is Map && curInnObj['innings_number']?.toString() == currentInning.toString()) {
-          final hasStats = ((curInnObj['batting'] as List?)?.isNotEmpty ?? false) ||
+        if (curInnObj is Map &&
+            curInnObj['innings_number']?.toString() ==
+                currentInning.toString()) {
+          final hasStats =
+              ((curInnObj['batting'] as List?)?.isNotEmpty ?? false) ||
               ((curInnObj['bowling'] as List?)?.isNotEmpty ?? false);
           if (currentInningsData == null || hasStats) {
             currentInningsData = Map<String, dynamic>.from(curInnObj);
           }
         }
 
-        final List<dynamic> serverBatting = (currentInningsData?['batting'] as List<dynamic>?) ?? const [];
-        final List<dynamic> serverBowling = (currentInningsData?['bowling'] as List<dynamic>?) ?? const [];
+        final List<dynamic> serverBatting =
+            (currentInningsData?['batting'] as List<dynamic>?) ?? const [];
+        final List<dynamic> serverBowling =
+            (currentInningsData?['bowling'] as List<dynamic>?) ?? const [];
 
         if (serverBatting.isNotEmpty) {
-          final atCrease = serverBatting.where((b) => b is Map && b['status'] == 'not_out').toList();
+          final atCrease = serverBatting
+              .where((b) => b is Map && b['status'] == 'not_out')
+              .toList();
           final shown = atCrease.isNotEmpty ? atCrease : serverBatting;
           newBatsmen.clear();
           for (final b in shown.whereType<Map>()) {
             final id = int.tryParse(b['player_id']?.toString() ?? '') ?? 0;
-            final sr = double.tryParse(b['strike_rate']?.toString() ?? '') ?? 0.0;
+            final sr =
+                double.tryParse(b['strike_rate']?.toString() ?? '') ?? 0.0;
             newBatsmen.add({
               'name': resolvePlayerName(id, b['name'], 'Batter'),
               'runs': b['runs'] ?? 0,
@@ -542,7 +696,8 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
           final List<Map<String, dynamic>> others = [];
           for (final b in serverBowling.whereType<Map>()) {
             final id = int.tryParse(b['player_id']?.toString() ?? '') ?? 0;
-            final econ = double.tryParse(b['economy_rate']?.toString() ?? '') ?? 0.0;
+            final econ =
+                double.tryParse(b['economy_rate']?.toString() ?? '') ?? 0.0;
             final name = resolvePlayerName(id, b['name'], 'Bowler');
             final entry = <String, dynamic>{
               'name': name,
@@ -564,14 +719,17 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
             ..addAll(others);
         }
 
-        final rawCurDeliveries = runtime?['current_over_deliveries'] as List<dynamic>?;
+        final rawCurDeliveries =
+            runtime?['current_over_deliveries'] as List<dynamic>?;
         final int curOver = runtime?['current_over'] ?? 0;
         List<String> thisOverBalls = [];
         if (rawCurDeliveries != null && rawCurDeliveries.isNotEmpty) {
           thisOverBalls = rawCurDeliveries.map(_deliveryLabel).toList();
-        } else if (overBallsMap.containsKey(curOver) && overBallsMap[curOver]!.isNotEmpty) {
+        } else if (overBallsMap.containsKey(curOver) &&
+            overBallsMap[curOver]!.isNotEmpty) {
           thisOverBalls = overBallsMap[curOver]!;
-        } else if (overBallsMap.containsKey(curOver - 1) && overBallsMap[curOver - 1]!.isNotEmpty) {
+        } else if (overBallsMap.containsKey(curOver - 1) &&
+            overBallsMap[curOver - 1]!.isNotEmpty) {
           thisOverBalls = overBallsMap[curOver - 1]!;
         } else if (currentOverBallsList.isNotEmpty) {
           thisOverBalls = currentOverBallsList.length > 6
@@ -585,12 +743,36 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
         final runsRequiredVal = runtime?['runs_required'];
         String displayRunRate = currentRunRate;
         if (targetVal != null && runsRequiredVal != null) {
-          displayRunRate = '$currentRunRate  •  Target: $targetVal (Need $runsRequiredVal)';
+          displayRunRate =
+              '$currentRunRate  •  Target: $targetVal (Need $runsRequiredVal)';
         }
 
-        String initials = teamAName.trim().split(RegExp(r'\s+')).map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();
+        // --- Scorecard tab extras ---
+        final inningsForTab =
+            (scoring?['innings'] as List?)
+                ?.whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            <Map<String, dynamic>>[];
+        final ballsLeft = runtime?['balls_remaining'];
+        final statusText = (runsRequiredVal != null && ballsLeft != null)
+            ? '$teamAName need $runsRequiredVal runs in $ballsLeft balls'
+            : '';
+        final rrrVal = runtime?['required_run_rate'];
+        final rrr = rrrVal != null
+            ? (double.tryParse(rrrVal.toString()) ?? 0).toStringAsFixed(2)
+            : '0.00';
+
+        String initials = teamAName
+            .trim()
+            .split(RegExp(r'\s+'))
+            .map((e) => e.isNotEmpty ? e[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase();
         if (initials.isEmpty) initials = 'TM';
 
+        if (!mounted) return;
         setState(() {
           _tournamentName = newTournamentName;
           _location = newLocation;
@@ -608,12 +790,21 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
           _thisOverBalls = thisOverBalls;
           _batsmen = newBatsmen;
           _bowlers = newBowlers;
+
+          _innings = inningsForTab;
+          _currentInning = currentInning;
+          _rrr = rrr;
+          _statusText = statusText;
+          _otherTeamLabel = teamBName;
+          _otherTeamScore = otherScore;
+          _playerNames = playerNames;
+          _playerIsCaptain = playerIsCaptain;
         });
       }
     } catch (e) {
       debugPrint('Error fetching live score: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -651,45 +842,122 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
     );
   }
 
+  // ───────────────────────── Header ─────────────────────────
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Row(
+        children: [
+          GlassBackButton(onTap: () => Navigator.of(context).pop()),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _tournamentName,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      _roundLabel,
+                      style: const TextStyle(
+                        color: Color(0xFF2ECC71),
+                        fontSize: 15,
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(Icons.circle, size: 5, color: Colors.white38),
+                    ),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: Colors.white54,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        _location,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return TabBar(
+      controller: _tabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      dividerColor: Colors.white12,
+      indicatorSize: TabBarIndicatorSize.label,
+      indicator: const UnderlineTabIndicator(
+        borderSide: BorderSide(color: Color(0xFFF2A500), width: 3),
+      ),
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white54,
+      labelStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(fontSize: 18),
+      tabs: [
+        Tab(
+          child: Row(
+            children: const [
+              Icon(Icons.circle, color: Colors.red, size: 10),
+              SizedBox(width: 8),
+              Text('Live'),
+            ],
+          ),
+        ),
+        for (final t in _tabs.skip(1)) Tab(text: t),
+      ],
+    );
+  }
+
+  Widget _buildComingSoon() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 120),
+        Center(
+          child: Text('Coming soon', style: TextStyle(color: Colors.white54)),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.authBackgroundBottom,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.authBackgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Row(
-                  children: [
-                    GlassBackButton(onTap: () => Navigator.of(context).pop()),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _tournamentName,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.location_on_outlined, color: Colors.white38, size: 12),
-                              const SizedBox(width: 3),
-                              Text(_location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildHeader(),
+              const SizedBox(height: 14),
+              _buildTabBar(),
               if (_isLoading)
                 const LinearProgressIndicator(
                   color: AppColors.primary,
@@ -701,20 +969,15 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
                   onRefresh: _fetchLiveScore,
                   color: AppColors.primary,
                   backgroundColor: AppColors.authBackgroundBottom,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                  child: TabBarView(
+                    controller: _tabController,
                     children: [
-                      MatchStatusPills(roundLabel: _roundLabel),
-                      const SizedBox(height: 18),
-                      TeamMatchupRow(
+                      LiveTab(
+                        roundLabel: _roundLabel,
                         teamAName: _teamAName,
                         teamARole: _teamARole,
                         teamBName: _teamBName,
                         teamBRole: _teamBRole,
-                      ),
-                      const SizedBox(height: 18),
-                      LiveScorePanel(
-                        teamAName: _teamAName,
                         teamAInitials: _teamAInitials,
                         teamAColor: _teamAColor,
                         battingScore: _battingScore,
@@ -722,50 +985,70 @@ class _LiveMatchDetailScreenState extends State<LiveMatchDetailScreen> {
                         currentRunRate: _currentRunRate,
                         currentBowler: _currentBowler,
                         thisOverBalls: _thisOverBalls,
+                        batsmen: _batsmen,
+                        bowlers: _bowlers,
+                        likeCount: _likeCount,
+                        fireCount: _fireCount,
+                        onStadiumCheckIn: () => _openStadiumCheckIn(context),
+                        onPredictorLeaderboard: () =>
+                            _openPredictorLeaderboard(context),
+                        onPredictorSheet: () => _openPredictorSheet(context),
                       ),
-                      const SizedBox(height: 26),
-                      const Text('Batsman', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 12),
-                      BatsmanStatsTable(batsmen: _batsmen),
-                      const SizedBox(height: 24),
-                      const Text('Bowler', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 12),
-                      BowlerStatsTable(bowlers: _bowlers),
-                      const SizedBox(height: 24),
-                      const Text('Fan Reactions', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 12),
-                      FanReactionsRow(likeCount: _likeCount, fireCount: _fireCount, onLike: () {}, onFire: () {}, onShare: () {}),
-                      const SizedBox(height: 22),
-                      PredictEarnCard(teamAName: _teamAName, teamBName: _teamBName),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlineActionButton(
-                              label: 'Stadium & Check In',
-                              onTap: () => _openStadiumCheckIn(context),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlineActionButton(
-                              label: 'Predictor Leaderboard',
-                              onTap: () => _openPredictorLeaderboard(context),
-                            ),
-                          ),
-                        ],
+
+                      ScorecardTab(
+                        innings: _innings,
+                        currentInnings: _currentInning,
+                        resolveName: _resolveName,
+                        isCaptain: _isCaptain,
+                        teamName: _teamAName,
+                        teamInitials: _teamAInitials,
+                        battingScore: _battingScore,
+                        overs: _overs,
+                        otherTeamLabel: _otherTeamLabel,
+                        otherTeamScore: _otherTeamScore,
+                        crr: _baseRunRate,
+                        rrr: _rrr,
+                        statusText: _statusText,
+                        inningsBadge: '$_currentInning',
                       ),
-                      const SizedBox(height: 20),
-                      SportoHypeMeterCard(
-                        teamAName: _teamAName,
-                        teamBName: _teamBName,
-                        teamAPercent: 44,
-                        teamBPercent: 58,
+                      StatesTab(
+                        innings: _innings,
+                        currentInnings: _currentInning,
+                        resolveName: _resolveName,
+                        isCaptain: _isCaptain,
+                        teamName: _teamAName,
+                        teamInitials: _teamAInitials,
+                        battingScore: _battingScore,
+                        overs: _overs,
+                        otherTeamLabel: _otherTeamLabel,
+                        otherTeamScore: _otherTeamScore,
+                        crr: _baseRunRate,
+                        rrr: _rrr,
+                        statusText: _statusText,
+                        inningsBadge: '$_currentInning',
                       ),
-                      const SizedBox(height: 20),
-                      PredictorChallengeButton(onTap: () => _openPredictorSheet(context)),
-                      const SizedBox(height: 18),
-                      ViewBracketTile(onTap: () {}),
+                      // Text("Coming Soon"),
+                      Text("Coming Soon"),
+                      Text("Coming Soon"),
+                      Text("Coming Soon"),
+                      // // for (final _ in _tabs.skip(2)) _buildComingSoon(),
+                      // StatesTab(
+                      //   innings: _innings,
+                      //   currentInnings: _currentInning,
+                      //   resolveName: _resolveName,
+                      //   isCaptain: _isCaptain,
+                      //   teamName: _teamAName,
+                      //   teamInitials: _teamAInitials,
+                      //   battingScore: _battingScore,
+                      //   overs: _overs,
+                      //   otherTeamLabel: _otherTeamLabel,
+                      //   otherTeamScore: _otherTeamScore,
+                      //   crr: _baseRunRate,
+                      //   rrr: _rrr,
+                      //   statusText: _statusText,
+                      //   inningsBadge: '$_currentInning',
+                      // ),
+                      // for (final _ in _tabs.skip(3)) _buildComingSoon(),
                     ],
                   ),
                 ),

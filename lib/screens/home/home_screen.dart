@@ -295,16 +295,16 @@ class _HomeTabBodyState extends State<_HomeTabBody> {
             },
           ),
 
-          // const SizedBox(height: 12),
-          // IndividualPlayerAwardCard(
-          //   onTap: () {
-          //     Navigator.of(context).push(
-          //       MaterialPageRoute(
-          //         builder: (_) => const PrizeDetailsScreenindividualPrise(),
-          //       ),
-          //     );
-          //   },
-          // ),
+          const SizedBox(height: 12),
+          IndividualPlayerAwardCard(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PrizeDetailsScreenindividualPrise(),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 12),
           LatestPrizeBanner(key: ValueKey(_prizeRefresh)),
           Consumer<HomeProvider>(

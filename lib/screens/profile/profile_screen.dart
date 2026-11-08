@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sporto/screens/profile/MySpotoPoints/My_Spoto_Points.dart';
+import 'package:sporto/screens/profile/MySpotoPoints/my_sporto_point_history.dart';
 import 'package:sporto/screens/profile/my_statastics/my_statastics.dart';
 import '../../models/profile_info.dart';
 import '../../routes/app_routes.dart';
@@ -157,8 +159,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onSelect: (index) => setState(() => _selectedSport = index),
         ),
         const SizedBox(height: 16),
-        const ProfileStatsRow(stats: dummyProfileStats),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SpotoPointsScreenHistory(),
+              ),
+            );
+          },
+          child: SpotoPointsCard(
+            points: 570,
+            todayDelta: 5,
+            pointsToNext: 1430,
+            nextLevel: 'Champion',
+            progress: 0.53, // matches the bar in the design
+          ),
+        ),
         const SizedBox(height: 16),
+
+        const ProfileStatsRow(stats: dummyProfileStats),
+
+        const SizedBox(height: 16),
+
         const ChampionshipJourneyCard(),
         const SizedBox(height: 16),
         for (final item in dummyProfileMainMenu) ...[
